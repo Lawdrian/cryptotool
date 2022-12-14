@@ -8,7 +8,7 @@ public class Crypto {
 
     private String cipher;
 
-    private String key;
+    private String password;
 
     private Date date;
 
@@ -22,8 +22,8 @@ public class Crypto {
         cipher = text;
     }
 
-    public void setKey(String text) {
-        key = text;
+    public void setPassword(String text) {
+        password = text;
     }
 
     public void setDate(Date date) {
@@ -36,8 +36,8 @@ public class Crypto {
     public String getCipher() {
         return cipher;
     }
-    public String getKey() {
-        return key;
+    public String getPassword() {
+        return password;
     }
 
     public Date getDate() {
