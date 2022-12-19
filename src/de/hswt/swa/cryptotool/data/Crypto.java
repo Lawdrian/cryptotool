@@ -1,8 +1,9 @@
 package de.hswt.swa.cryptotool.data;
 
+import java.io.Serializable;
 import java.util.Date;
 
-public class Crypto {
+public class Crypto implements Serializable {
 
     private String plainText;
 

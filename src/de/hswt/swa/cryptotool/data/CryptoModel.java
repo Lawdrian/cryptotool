@@ -1,6 +1,5 @@
 package de.hswt.swa.cryptotool.data;
 
-import de.hswt.swa.cryptotool.gui.MainController.EventType;
 import de.hswt.swa.cryptotool.tools.CryptoTool;
 
 import java.io.*;
@@ -19,47 +18,22 @@ public class CryptoModel implements CryptoModelObservable{
 
     public void readTextFile(String filepath, EventType eventType) {
 
-
         try {
-
-            System.out.println(new String(Files.readAllBytes(Paths.get(filepath))));
             String text = new String(Files.readAllBytes(Paths.get(filepath)));
-            System.out.println("Plain: " + crypto.getPlainText());
-            System.out.println("Cipher: " + crypto.getCipher());
             System.out.println(eventType);
             switch (eventType) {
                 case IMPORT_TEXT:
+                    resetCryptoObject();
                     crypto.setPlainText(text);
                     break;
                 case IMPORT_CIPHER:
+                    resetCryptoObject();
                     crypto.setCipher(text);
                     break;
                 default:
                     System.out.println("Error occoured during file import");
                     break;
             }
-            System.out.println("Plain: " + crypto.getPlainText());
-            System.out.println("Cipher: " + crypto.getCipher());
-
-            /*
-            FileInputStream fs = new FileInputStream(filepath);
-            InputStreamReader isr = new InputStreamReader(fs);
-            BufferedReader input = new BufferedReader(isr);
-
-            String line = input.readLine();
-            List<String> text = new ArrayList<>();
-            while  (line != null) { // noch nicht am Dateiende
-                // verarbeite aktuelle Zeile
-                System.out.println(line);
-                text.add( " " + line);
-
-                //lese nächste Zeile
-                line = input.readLine();
-            }
-            System.out.println("Gesamter Text");
-            System.out.println(text);
-            //crypto.setPlainText(text.get(1));
-            */
             // Inform observer that the state changed
             this.fireUpdate();
 
@@ -70,23 +44,57 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public void saveAsTextFile(String filepath, EventType eventType) {
+    public void readCryptoFile(File file) {
+        try {
+            FileInputStream fin = new FileInputStream(file);
+            ObjectInputStream oin = new ObjectInputStream(fin);
+            // Read objects
+            crypto = (Crypto) oin.readObject();
+            this.fireUpdate();
+        } catch (Exception e) {
+            System.out.println("Exception when saving file");
+            e.printStackTrace();
+        }
+    }
+
+    public boolean saveAsTextFile(String filepath, EventType eventType) {
         try {
             switch (eventType) {
                 case SAVE_TEXT:
-                    Files.writeString(Paths.get(filepath), crypto.getPlainText());
-                    break;
+                    if (crypto.getPlainText() != null) {
+                        Files.writeString(Paths.get(filepath), crypto.getPlainText());
+                        return true;
+                    }
+                    return false;
                 case SAVE_CIPHER:
-                    Files.writeString(Paths.get(filepath), crypto.getCipher());
-                    break;
+                    if (crypto.getCipher() != null) {
+                        Files.writeString(Paths.get(filepath), crypto.getCipher());
+                    }
+                    return false;
                 default:
                     System.out.println("Error occoured during file save");
-                    break;
+                    return false;
             }
 
         } catch (Exception e) {
             System.out.println("Exception when saving file");
             e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean saveAsCryptoFile(File file) {
+        try {
+            FileOutputStream fout = new FileOutputStream(file);
+            ObjectOutputStream oos = new ObjectOutputStream(fout);
+            oos.writeObject(crypto);
+            oos.flush();
+            oos.close();
+            return true;
+        } catch (Exception e) {
+            System.out.println("Exception when saving crypto object to file");
+            e.printStackTrace();
+            return false;
         }
     }
 

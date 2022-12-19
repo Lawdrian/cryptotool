@@ -1,18 +1,16 @@
 package de.hswt.swa.cryptotool.gui;
 
 import de.hswt.swa.cryptotool.data.CryptoModelObserver;
+import de.hswt.swa.cryptotool.data.EventType;
 import de.hswt.swa.cryptotool.logic.BusinessLogic;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
-import javafx.scene.Node;
-import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
 import javafx.stage.FileChooser;
 
 import java.io.File;
 import java.util.Optional;
 
-import static de.hswt.swa.cryptotool.gui.MainController.EventType.*;
+import static de.hswt.swa.cryptotool.data.EventType.*;
 
 public class MainController {
 
@@ -26,18 +24,6 @@ public class MainController {
         view = mainFrame;
     }
 
-
-    public enum EventType {
-        IMPORT_TEXT,
-        SAVE_TEXT,
-        LOCAL_ENCODE,
-        IMPORT_CIPHER,
-        SAVE_CIPHER,
-        LOCAL_DECODE,
-        IMPORT_CRYPTO,
-        SAVE_CRYPTO,
-        RESET_FIELDS
-    }
 
     public EventHandler<ActionEvent> getEventHandler(EventType eventType) {
         switch (eventType) {
@@ -53,18 +39,11 @@ public class MainController {
 
 
     class ImportFileHandler implements EventHandler<ActionEvent> {
-        private EventType eventType;
+        private final EventType eventType;
         ImportFileHandler(EventType eventType) {
             this.eventType = eventType;
         }
 
-        /*
-        public Optional<String> getFileExtension(String filename) {
-            return Optional.ofNullable(filename)
-                    .filter(f -> f.contains("."))
-                    .map(f -> f.substring(filename.lastIndexOf(".") + 1));
-        }
-        */
         public void handle(ActionEvent event) {
             String extension;
             if (eventType==EventType.IMPORT_CRYPTO) {
@@ -83,13 +62,13 @@ public class MainController {
                         logic.readTextFile(file, eventType);
                         break;
                     case IMPORT_CRYPTO:
-                        logic.readCryptoObject(file);
+                        logic.readCryptoFile(file);
                         break;
                 }
-                view.addStatus("File " + file.getAbsolutePath() + " imported sucessfully");
+                view.addStatus("File " + file.getName() + " imported sucessfully.");
             }
             else {
-                view.addStatus("Error file import");
+                view.addStatus("Error occurred during file import.");
             }
 
         }
@@ -98,7 +77,7 @@ public class MainController {
 
 
     class SaveHandler implements EventHandler<ActionEvent> {
-        private EventType eventType;
+        private final EventType eventType;
 
         public SaveHandler(EventType eventType) {
             this.eventType = eventType;
@@ -112,18 +91,25 @@ public class MainController {
                 extension = "*.txt";
             }
             // open a file chooser
-            File file = view.openFileChooser("Save Sequences", new FileChooser.ExtensionFilter(extension, extension), new File("."), false);
+            File file = view.openFileChooser("Save file", new FileChooser.ExtensionFilter(extension, extension), new File("."), false);
             if (file != null) {
                 switch (eventType) {
                     case SAVE_TEXT:
                     case SAVE_CIPHER:
-                        logic.saveAsTextFile(file, eventType);
+                        if (logic.saveAsTextFile(file, eventType)) {
+                            view.addStatus("Save was successful.");
+                        }
+                        else {
+                            view.openAlert("An empty field cannot be saved.");
+                        }
                         break;
                     case SAVE_CRYPTO:
-                        //logic.saveAsCryptoFile()
+                        if (logic.saveAsCryptoFile(file)) {
+                            view.addStatus("Saving the crypto object was successful.");
+                        }
                  }
             } else {
-                view.addStatus("Error in file name in save dialog");
+                view.addStatus("Error occurred during file save.");
             }
         }
 
@@ -134,7 +120,7 @@ public class MainController {
 
     class EncodeHandler implements EventHandler<ActionEvent> {
 
-        private EventType eventType;
+        private final EventType eventType;
 
         public EncodeHandler(EventType eventType) {
             this.eventType = eventType;
@@ -148,40 +134,7 @@ public class MainController {
                 fileImporter.handle(event);
             }
             if (logic.isPlainTextSet()) {
-                // Create dialog component where the user can type in a password and start the encoding.
-                Dialog<String> dialog = new Dialog<>();
-                dialog.setTitle("Set password to encode text");
-                ButtonType okButtonType = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
-                ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
-                dialog.getDialogPane().getButtonTypes().addAll(okButtonType, cancelButtonType);
-
-                PasswordField password = new PasswordField();
-                password.setPromptText("Password");
-
-                GridPane grid = new GridPane();
-                grid.setHgap(10);
-                grid.setVgap(10);
-                grid.add(new Label("Password:"), 0, 0);
-                grid.add(password, 1, 0);
-
-                dialog.getDialogPane().setContent(grid);
-
-                Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
-                okButton.setDisable(true);
-
-                // Disable okButton, if password field is empty
-                password.textProperty().addListener((observable, oldValue, newValue) -> {
-                    okButton.setDisable(newValue.trim().isEmpty());
-                });
-                System.out.println("Aloa");
-                dialog.setResultConverter(dialogButton -> {
-                    if (dialogButton == okButtonType) {
-                        return password.getText();
-                    } else {
-                        return null;
-                    }
-                });
-                Optional<String> result = dialog.showAndWait();
+                Optional<String> result = view.openPasswordDialog(0);
                 result.ifPresent(pw -> {
                     logic.setPassword(pw);
                     if (logic.isPasswordSet()) {
@@ -207,7 +160,7 @@ public class MainController {
 
     class DecodeHandler implements EventHandler<ActionEvent> {
 
-        private EventType eventType;
+        private final EventType eventType;
 
         public DecodeHandler(EventType eventType) {
             this.eventType = eventType;
@@ -223,7 +176,7 @@ public class MainController {
             if (logic.isCipherSet()) {
                 // Create dialog component where the user can type in a password and start the encoding.
 
-                Optional<String> result = view.openPasswordDialog();
+                Optional<String> result = view.openPasswordDialog(1);
                 result.ifPresent(pw -> {
                     switch (eventType) {
                         case LOCAL_DECODE:

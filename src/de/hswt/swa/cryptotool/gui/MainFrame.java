@@ -2,6 +2,7 @@ package de.hswt.swa.cryptotool.gui;
 
 import de.hswt.swa.cryptotool.data.Crypto;
 import de.hswt.swa.cryptotool.data.CryptoModelObserver;
+import de.hswt.swa.cryptotool.data.EventType;
 import javafx.application.Application;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Pos;
@@ -11,7 +12,6 @@ import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
 import javafx.stage.FileChooser;
-import javafx.stage.Popup;
 import javafx.stage.Stage;
 
 import java.io.File;
@@ -54,13 +54,13 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Menu textMenu = new Menu("Plain Text");
         // first item: import a text file containing plain text
         MenuItem importTextItem = new MenuItem("Import");
-        importTextItem.setOnAction(controller.getEventHandler(MainController.EventType.IMPORT_TEXT));
+        importTextItem.setOnAction(controller.getEventHandler(EventType.IMPORT_TEXT));
         // second item: save the plain text to the file system
         MenuItem saveTextItem = new MenuItem("Save");
-        saveTextItem.setOnAction(controller.getEventHandler(MainController.EventType.SAVE_TEXT));
+        saveTextItem.setOnAction(controller.getEventHandler(EventType.SAVE_TEXT));
         // third item: locally encode the plain text
         MenuItem localEncodeItem = new MenuItem("Local encode");
-        localEncodeItem.setOnAction(controller.getEventHandler(MainController.EventType.LOCAL_ENCODE));
+        localEncodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
@@ -71,13 +71,13 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Menu cipherMenu = new Menu("Cipher");
         // first item: import a text file containing plain text
         MenuItem importCipherItem = new MenuItem("Import");
-        importCipherItem.setOnAction(controller.getEventHandler(MainController.EventType.IMPORT_CIPHER));
+        importCipherItem.setOnAction(controller.getEventHandler(EventType.IMPORT_CIPHER));
         // second item: save the cipher to the file system
         MenuItem saveCipherItem = new MenuItem("Save");
-        saveCipherItem.setOnAction(controller.getEventHandler(MainController.EventType.SAVE_CIPHER));
+        saveCipherItem.setOnAction(controller.getEventHandler(EventType.SAVE_CIPHER));
         // third item: locally decode the cipher
         MenuItem localDecodeItem = new MenuItem("Local decode");
-        localDecodeItem.setOnAction(controller.getEventHandler(MainController.EventType.LOCAL_DECODE));
+        localDecodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
@@ -88,15 +88,16 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Menu cryptoMenu = new Menu("Crypto Object");
         // first item: import a crypto object and display its content
         MenuItem importCryptoItem = new MenuItem("Import");
+        importCryptoItem.setOnAction(controller.getEventHandler(EventType.IMPORT_CRYPTO));
         // second item: save a crypto object to the file system
         MenuItem saveCryptoItem = new MenuItem("Save");
+        saveCryptoItem.setOnAction(controller.getEventHandler(EventType.SAVE_CRYPTO));
+
         cryptoMenu.getItems().add(importCryptoItem);
         cryptoMenu.getItems().add(saveCryptoItem);
-        // register the controller as listener
-        importCryptoItem.setOnAction(controller.getEventHandler(MainController.EventType.IMPORT_CRYPTO));
-        saveCryptoItem.setOnAction(controller.getEventHandler(MainController.EventType.SAVE_CRYPTO));
 
-        // add the file menu to the menubar
+
+        // add the file menus to the menubar
         menu.getMenus().addAll(textMenu);
         menu.getMenus().addAll(cipherMenu);
         menu.getMenus().addAll(cryptoMenu);
@@ -105,7 +106,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         root.setTop(menu);
 
         Button resetFieldsButton = new Button("Reset Fields");
-        resetFieldsButton.setOnAction(controller.getEventHandler(MainController.EventType.RESET_FIELDS));
+        resetFieldsButton.setOnAction(controller.getEventHandler(EventType.RESET_FIELDS));
         plainTextArea = new TextArea();
         plainTextArea.setEditable(false);
         plainTextArea.setWrapText(true);
@@ -141,7 +142,10 @@ public class MainFrame extends Application implements CryptoModelObserver {
         statusPane.setPrefHeight(20);
         statusLines = new ListView<>();
         statusLines.getItems().addListener((ListChangeListener<String>)c->{
-            statusLines.scrollTo(statusLines.getItems().size()-1);
+            System.out.println(statusLines.getItems());
+            System.out.println(statusLines.getItems().size());
+            statusLines.scrollTo(statusLines.getItems().size()+1);
+            statusPane.setContent(statusLines);
         });
         statusPane.setContent(statusLines);
 
@@ -172,9 +176,36 @@ public class MainFrame extends Application implements CryptoModelObserver {
         statusLines.getItems().add(msg);
     }
 
-    public Optional<String> openPasswordDialog() {
+
+    /**
+     * This function opens a javafx alert field that displays a warning to the user.
+     *
+     * @param msg   the message that should be displayed to the user.
+     */
+    public void openAlert(String msg) {
+        Alert alert = new Alert(Alert.AlertType.WARNING);
+        alert.setTitle("Warning");
+        alert.setHeaderText("Something went wrong");
+        alert.setContentText(msg);
+        alert.show();
+    }
+
+    /**
+     * This function opens a javafx dialog field where the user has to enter a password and press enter.
+     *
+     * @param mode  decides the title of the dialog. Should be 1, if the dialog is used for entering the pwd to decode a cipher.
+     * @return      the pwd as Option type.
+     */
+    public Optional<String> openPasswordDialog(Integer mode) {
+        String msg;
+        if (mode == 1) {
+            msg = "Type in password to decode cipher";
+        }
+        else {
+            msg = "Set password to encode text";
+        }
         Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("Type in password to decode cipher");
+        dialog.setTitle(msg);
         ButtonType okButtonType = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
         ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, cancelButtonType);
