@@ -4,15 +4,26 @@ import de.hswt.swa.cryptotool.data.CryptoModel;
 import de.hswt.swa.cryptotool.data.CryptoModelObserver;
 import de.hswt.swa.cryptotool.data.EventType;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.util.Properties;
 
 public class BusinessLogic {
 
 
     private CryptoModel model = new CryptoModel();
+    private Properties properties;
+    private final String propertyFileName = "crypto.properties";
 
     public BusinessLogic() {
-
+        properties = new Properties();
+        try {
+            BufferedInputStream stream = new BufferedInputStream(new FileInputStream(propertyFileName));
+            properties.load(stream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void readTextFile(File file, EventType eventType) {model.readTextFile(file.getAbsolutePath(), eventType);}
@@ -25,6 +36,8 @@ public class BusinessLogic {
     public boolean saveAsCryptoFile(File file) {return model.saveAsCryptoFile(file);}
 
     public boolean localEncode() {return model.localEncode();}
+
+    public boolean socketEncode() {return model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));}
 
     public boolean localDecode(String pw) {return model.localDecode(pw);}
 

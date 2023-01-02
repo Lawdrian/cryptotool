@@ -30,8 +30,8 @@ public class MainController {
             case IMPORT_TEXT, IMPORT_CIPHER, IMPORT_CRYPTO: return new ImportFileHandler(eventType);
             case RESET_FIELDS:return new ResetFieldsHandler();
             case SAVE_TEXT, SAVE_CIPHER, SAVE_CRYPTO: return new SaveHandler(eventType);
-            case LOCAL_ENCODE: return new EncodeHandler(eventType);
-            case LOCAL_DECODE: return new DecodeHandler(eventType);
+            case LOCAL_ENCODE, SOCKET_ENCODE: return new EncodeHandler(eventType);
+            case LOCAL_DECODE, SOCKET_DECODE: return new DecodeHandler(eventType);
             default: return null;
         }
 
@@ -100,6 +100,7 @@ public class MainController {
                             view.addStatus("Save was successful.");
                         }
                         else {
+                            view.addStatus("Field could not be saved");
                             view.openAlert("An empty field cannot be saved.");
                         }
                         break;
@@ -110,6 +111,7 @@ public class MainController {
                  }
             } else {
                 view.addStatus("Error occurred during file save.");
+                view.openAlert("Error occurred during file save.");
             }
         }
 
@@ -138,18 +140,26 @@ public class MainController {
                 result.ifPresent(pw -> {
                     logic.setPassword(pw);
                     if (logic.isPasswordSet()) {
-                        System.out.println("Password has been set");
+                        System.out.println("Password has been set.");
                         switch (eventType) {
                             case LOCAL_ENCODE:
                                 if (logic.localEncode()) {
-                                    view.addStatus("Text has been successfully encoded!");
+                                    view.addStatus("Text has been successfully encoded.");
+                                } else {
+                                    view.addStatus("Text couldn't be encoded.");
+                                    view.openAlert("Text couldn't be encoded.");
                                 }
-                                else {
-                                    view.addStatus("Text couldn't be encoded!");
+                                break;
+                            case SOCKET_ENCODE:
+                                if(logic.socketEncode()) {
+                                    view.addStatus("Text has been successfully encoded.");
+                                } else {
+                                    view.addStatus("Text couldn't be encoded.");
+                                    view.openAlert("Text couldn't be encoded.");
                                 }
                                 break;
                             default:
-                                view.addStatus("This encoding has not been implemented yet!");
+                                view.addStatus("This encoding has not been implemented yet.");
                                 break;
                         }
                     }
@@ -181,14 +191,15 @@ public class MainController {
                     switch (eventType) {
                         case LOCAL_DECODE:
                             if (logic.localDecode(pw)) {
-                                view.addStatus("Text has been successfully decoded!");
+                                view.addStatus("Text has been successfully decoded.");
                             }
                             else {
-                                view.addStatus("Wrong password!");
+                                view.addStatus("Wrong password.");
+                                view.openAlert("Wrong password.");
                             }
                             break;
                         default:
-                            view.addStatus("This encoding has not been implemented yet!");
+                            view.addStatus("This encoding has not been implemented yet.");
                             break;
                     }
                 });

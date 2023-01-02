@@ -61,10 +61,14 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // third item: locally encode the plain text
         MenuItem localEncodeItem = new MenuItem("Local encode");
         localEncodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
+        // fourth item: encode the plain text via socket connection
+        MenuItem socketEncodeItem = new MenuItem("Socket encode");
+        socketEncodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
         textMenu.getItems().add(localEncodeItem);
+        textMenu.getItems().add(socketEncodeItem);
 
 
         // a cipher menu in the menu bar
@@ -78,10 +82,14 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // third item: locally decode the cipher
         MenuItem localDecodeItem = new MenuItem("Local decode");
         localDecodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
+        // fourth item: decode the cipher via socket connection
+        MenuItem socketDecodeItem = new MenuItem("Socket decode");
+        socketDecodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
         cipherMenu.getItems().add(localDecodeItem);
+        cipherMenu.getItems().add(socketDecodeItem);
 
 
         // a crypto object menu in the menu bar
@@ -188,6 +196,10 @@ public class MainFrame extends Application implements CryptoModelObserver {
         alert.setHeaderText("Something went wrong");
         alert.setContentText(msg);
         alert.show();
+    }
+
+    public void openPopup(String msg) {
+
     }
 
     /**

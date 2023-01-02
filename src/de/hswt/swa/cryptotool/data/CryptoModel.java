@@ -1,5 +1,6 @@
 package de.hswt.swa.cryptotool.data;
 
+import de.hswt.swa.cryptotool.socket.CryptoSocketClient;
 import de.hswt.swa.cryptotool.tools.CryptoTool;
 
 import java.io.*;
@@ -69,6 +70,7 @@ public class CryptoModel implements CryptoModelObservable{
                 case SAVE_CIPHER:
                     if (crypto.getCipher() != null) {
                         Files.writeString(Paths.get(filepath), crypto.getCipher());
+                        return true;
                     }
                     return false;
                 default:
@@ -103,15 +105,34 @@ public class CryptoModel implements CryptoModelObservable{
             CryptoTool encoder = new CryptoTool();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             // Encode the plain text with the password and save the encoded text in the cipher variable
-            Boolean successfulEncode = encoder.encode(out, crypto.getPlainText().getBytes(), crypto.getPassword());
+            boolean successfulEncode = encoder.encode(out, crypto.getPlainText().getBytes(), crypto.getPassword());
             String s = Base64.getEncoder().encodeToString(out.toByteArray());
             crypto.setCipher(s);
             this.fireUpdate();
             return successfulEncode;
         } catch (Exception e) {
             e.printStackTrace();
+            crypto.setCipher(null);
+            this.fireUpdate();
             return false;
         }
+    }
+
+    public boolean socketEncode(String hostName, int port) {
+        System.out.println("hostname: " + hostName + " ; port: " + port );
+        CryptoSocketClient client = new CryptoSocketClient();
+        if (client.contactServer(hostName, port)) {
+            System.out.println("contact");
+            String cipher = client.encode(crypto.getPlainText(), crypto.getPassword());
+            if (cipher != null) {
+                crypto.setCipher(cipher);
+                this.fireUpdate();
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return false;
     }
 
     public boolean localDecode(String pw) {
@@ -129,8 +150,9 @@ public class CryptoModel implements CryptoModelObservable{
             }
             else return false;
         } catch (Exception e) {
-            System.out.println("Fehler");
             e.printStackTrace();
+            crypto.setPlainText(null);
+            this.fireUpdate();
             return false;
         }
     }
