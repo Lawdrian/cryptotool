@@ -39,8 +39,8 @@ public class BusinessLogic {
 
     public boolean socketEncode() {return model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));}
 
-    public boolean localDecode(String pw) {return model.localDecode(pw);}
-
+    public boolean localDecode(String password) {return model.localDecode(password);}
+    public boolean socketDecode(String password) {return model.socketDecode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")), password);}
     public boolean isPlainTextSet() {return model.isPlainTextSet();}
 
     public boolean isPasswordSet() {return model.isPasswordSet();}

@@ -137,8 +137,8 @@ public class MainController {
             }
             if (logic.isPlainTextSet()) {
                 Optional<String> result = view.openPasswordDialog(0);
-                result.ifPresent(pw -> {
-                    logic.setPassword(pw);
+                result.ifPresent(password -> {
+                    logic.setPassword(password);
                     if (logic.isPasswordSet()) {
                         System.out.println("Password has been set.");
                         switch (eventType) {
@@ -185,12 +185,20 @@ public class MainController {
             }
             if (logic.isCipherSet()) {
                 // Create dialog component where the user can type in a password and start the encoding.
-
                 Optional<String> result = view.openPasswordDialog(1);
-                result.ifPresent(pw -> {
+                result.ifPresent(password -> {
                     switch (eventType) {
                         case LOCAL_DECODE:
-                            if (logic.localDecode(pw)) {
+                            if (logic.localDecode(password)) {
+                                view.addStatus("Text has been successfully decoded.");
+                            }
+                            else {
+                                view.addStatus("Wrong password.");
+                                view.openAlert("Wrong password.");
+                            }
+                            break;
+                        case SOCKET_DECODE:
+                            if (logic.socketDecode(password)) {
                                 view.addStatus("Text has been successfully decoded.");
                             }
                             else {

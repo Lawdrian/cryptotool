@@ -119,10 +119,8 @@ public class CryptoModel implements CryptoModelObservable{
     }
 
     public boolean socketEncode(String hostName, int port) {
-        System.out.println("hostname: " + hostName + " ; port: " + port );
         CryptoSocketClient client = new CryptoSocketClient();
         if (client.contactServer(hostName, port)) {
-            System.out.println("contact");
             String cipher = client.encode(crypto.getPlainText(), crypto.getPassword());
             if (cipher != null) {
                 crypto.setCipher(cipher);
@@ -135,16 +133,15 @@ public class CryptoModel implements CryptoModelObservable{
         return false;
     }
 
-    public boolean localDecode(String pw) {
+    public boolean localDecode(String password) {
         try {
             if (isCipherSet()) {
                 CryptoTool decoder = new CryptoTool();
                 // Decode the cipher with the given password and save the plain text in the plainText variable
                 byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
                 InputStream is = new ByteArrayInputStream(bytes);
-                byte[] plain = decoder.decode(is, pw);
-                crypto.setPlainText(new String(plain));
-
+                byte[] plainText = decoder.decode(is, password);
+                crypto.setPlainText(new String(plainText));
                 this.fireUpdate();
                 return true;
             }
@@ -157,6 +154,27 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
+    public boolean socketDecode(String hostName, int port, String password) {
+        try {
+            if (isCipherSet()) {
+                CryptoSocketClient client = new CryptoSocketClient();
+                if (client.contactServer(hostName, port)) {
+                    String plainText = client.decode(crypto.getCipher(), password);
+                    if (plainText != null) {
+                        crypto.setPlainText(plainText);
+                        this.fireUpdate();
+                        return true;
+                    }
+                }
+            }
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            crypto.setPlainText(null);
+            this.fireUpdate();
+            return false;
+        }
+    }
 
     public void resetCryptoObject() {
         crypto = new Crypto();

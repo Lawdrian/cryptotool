@@ -239,6 +239,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // Disable okButton, if password field is empty
         password.textProperty().addListener((observable, oldValue, newValue) -> {
             okButton.setDisable(newValue.trim().isEmpty());
+            okButton.setDisable(newValue.length() > 16);
         });
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton == okButtonType) {

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.net.SocketException;
 
 /**
  * Eine Klasse zur Demonstration der Client Technologie bei einer Socket-Verbindung.
@@ -62,21 +63,56 @@ public class CryptoSocketClient {
         }
     }
 
-    public String encode(String text, String password) {
+    public String encode(String plainText, String password) {
         try {
             sendMessage(ConnectionState.CLIENT_ENCODE_REQUEST.name());
             readMessageFromServer();
             if (messageFromServer.equals(ConnectionState.SERVER_ENCODE_ACCEPT.name())) {
+                // send the plain text
                 waitForMessage(ConnectionState.SERVER_PLAIN_TEXT_REQUEST.name());
-                sendMessage(text);
+                sendMessage(plainText);
                 sendMessage(ConnectionState.CLIENT_PLAIN_TEXT_DONE.name());
-
+                // send the password
                 waitForMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
                 sendMessage(password);
                 sendMessage(ConnectionState.CLIENT_PASSWORD_DONE.name());
+
                 waitForMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
                 readMessageFromServer(); // cipher
                 return messageFromServer;
+
+            }
+            return null;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+    public String decode(String cipher, String password) {
+        try {
+            sendMessage(ConnectionState.CLIENT_DECODE_REQUEST.name());
+            readMessageFromServer();
+            if (messageFromServer.equals(ConnectionState.SERVER_DECODE_ACCEPT.name())) {
+                // send the cipher
+                waitForMessage(ConnectionState.SERVER_CIPHER_REQUEST.name());
+                sendMessage(cipher);
+                sendMessage(ConnectionState.CLIENT_CIPHER_DONE.name());
+                // send the password
+                waitForMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
+                sendMessage(password);
+                sendMessage(ConnectionState.CLIENT_PASSWORD_DONE.name());
+
+                waitForMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
+                readMessageFromServer(); // plain text
+                StringBuilder plainText = new StringBuilder();
+                String seperator = "";
+                while (messageFromServer != null && !messageFromServer.equals(ConnectionState.SERVER_PLAIN_TEXT_DONE.name())) {
+                    plainText.append(seperator);
+                    seperator = System.getProperty("line.separator");
+                    plainText.append(messageFromServer);
+                    readMessageFromServer();
+                }
+                return plainText.toString();
 
             }
             return null;
@@ -95,6 +131,9 @@ public class CryptoSocketClient {
 
     private void readMessageFromServer() throws IOException {
         String msg = in.readLine();
+        if (msg != null && msg.equals(ConnectionState.SERVER_CONNECTION_CLOSE.name())) {
+            throw new SocketException("Server closed connection!");
+        }
         System.out.println("Message from server: " + msg);
         messageFromServer = msg;
     }

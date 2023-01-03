@@ -39,25 +39,21 @@ public class CryptoSocketWorker extends Thread {
                     state = ConnectionState.valueOf(messageFromClient);
                     switch (state) {
                         case CLIENT_ENCODE_REQUEST:
-                            out.println(ConnectionState.SERVER_ENCODE_ACCEPT);
-                            out.flush();
+                            sendMessage(ConnectionState.SERVER_ENCODE_ACCEPT.name());
                             handleEncodeRequest();
                         case CLIENT_DECODE_REQUEST:
-                            out.println(ConnectionState.SERVER_DECODE_ACCEPT);
-                            out.flush();
-                            //handleDecodeRequest()
-                        case CLIENT_CONNECTION_END:
-                            out.println(ConnectionState.SERVER_CONNECTION_END);
-                            out.flush();
+                            sendMessage(ConnectionState.SERVER_DECODE_ACCEPT.name());
+                            handleDecodeRequest();
+                        case CLIENT_CONNECTION_CLOSE:
+                            sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
                             client.close();
                             break;
                         default:
                             break;
 
                     }
-                } catch (Exception e) {
-                    out.println(ConnectionState.SERVER_CONNECTION_END);
-                    out.flush();
+                } catch (IOException e) {
+                    sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
                     client.close();
                     e.printStackTrace();
                 }
@@ -72,8 +68,7 @@ public class CryptoSocketWorker extends Thread {
         try {
 
             // expecting the next line to be the plain text
-            out.println(ConnectionState.SERVER_PLAIN_TEXT_REQUEST);
-            out.flush();
+            sendMessage(ConnectionState.SERVER_PLAIN_TEXT_REQUEST.name());
             readMessageFromClient(); // plain text
             StringBuilder plainText = new StringBuilder();
             String seperator = "";
@@ -83,8 +78,6 @@ public class CryptoSocketWorker extends Thread {
                 plainText.append(messageFromClient);
                 readMessageFromClient();
             }
-            System.out.println("PlainText");
-            System.out.println(plainText);
             if (!plainText.isEmpty()) {
                 sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
                 readMessageFromClient(); // password
@@ -99,8 +92,6 @@ public class CryptoSocketWorker extends Thread {
                 if (!password.isEmpty()) {
                     CryptoTool encoder = new CryptoTool();
                     ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-                    System.out.println("plainText " + plainText);
-                    System.out.println("password " + password);
                     boolean successfulEncode = encoder.encode(outByte, plainText.toString().getBytes(), password.toString());
                     System.out.println(successfulEncode);
                     if (successfulEncode) {
@@ -109,12 +100,74 @@ public class CryptoSocketWorker extends Thread {
                         sendMessage(s);
                     } else {
                         sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
+                        sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+                        client.close();
                     }
                 } else {
                     sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
+                    sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+                    client.close();
                 }
             } else {
                 sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
+                sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+                client.close();
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void handleDecodeRequest() {
+        try {
+            // expecting the next line to be the cipher
+            sendMessage(ConnectionState.SERVER_CIPHER_REQUEST.name());
+            readMessageFromClient(); // cipher
+            StringBuilder cipher = new StringBuilder();
+            String seperator = "";
+            while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_CIPHER_DONE.name())) {
+                cipher.append(seperator);
+                seperator = System.getProperty("line.separator");
+                cipher.append(messageFromClient);
+                readMessageFromClient();
+            }
+            if (!cipher.isEmpty()) {
+                sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
+                readMessageFromClient(); // password
+                StringBuilder password = new StringBuilder();
+                seperator = "";
+                while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_PASSWORD_DONE.name())) {
+                    password.append(seperator);
+                    seperator = System.getProperty("line.separator");
+                    password.append(messageFromClient);
+                    readMessageFromClient();
+                }
+                if (!password.isEmpty()) {
+                    try {
+                        CryptoTool decoder = new CryptoTool();
+                        byte[] bytes = Base64.getDecoder().decode(cipher.toString());
+                        InputStream is = new ByteArrayInputStream(bytes);
+                        byte[] plainText = decoder.decode(is, password.toString());
+                        if (plainText != null) {
+                            sendMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
+                            sendMessage(new String(plainText));
+                            sendMessage(ConnectionState.SERVER_PLAIN_TEXT_DONE.name());
+                        } else {
+                            sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
+                        }
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                } else {
+                    sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
+                    sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+                    client.close();
+                }
+            } else {
+                sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
+                sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+                client.close();
             }
 
         } catch (IOException e) {
@@ -124,6 +177,10 @@ public class CryptoSocketWorker extends Thread {
 
     private void readMessageFromClient() throws IOException {
         String msg = in.readLine();
+        if (msg != null && msg.equals(ConnectionState.CLIENT_CONNECTION_CLOSE.name())) {
+            System.out.println("Client wants to close connection!");
+            client.close();
+        }
         System.out.println("Message from client: " + msg);
         messageFromClient = msg;
     }
