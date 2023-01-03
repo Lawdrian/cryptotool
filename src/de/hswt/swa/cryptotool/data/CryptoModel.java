@@ -1,11 +1,17 @@
 package de.hswt.swa.cryptotool.data;
 
+import de.hswt.swa.cryptotool.rmi.CryptoRmiClient;
 import de.hswt.swa.cryptotool.socket.CryptoSocketClient;
 import de.hswt.swa.cryptotool.tools.CryptoTool;
 
 import java.io.*;
+import java.net.MalformedURLException;
+import java.net.SocketException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.security.InvalidKeyException;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
@@ -106,8 +112,12 @@ public class CryptoModel implements CryptoModelObservable{
             ByteArrayOutputStream out = new ByteArrayOutputStream();
             // Encode the plain text with the password and save the encoded text in the cipher variable
             boolean successfulEncode = encoder.encode(out, crypto.getPlainText().getBytes(), crypto.getPassword());
-            String s = Base64.getEncoder().encodeToString(out.toByteArray());
-            crypto.setCipher(s);
+            if (successfulEncode) {
+                String s = Base64.getEncoder().encodeToString(out.toByteArray());
+                crypto.setCipher(s);
+            } else {
+                crypto.setCipher(null);
+            }
             this.fireUpdate();
             return successfulEncode;
         } catch (Exception e) {
@@ -118,61 +128,84 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public boolean socketEncode(String hostName, int port) {
-        CryptoSocketClient client = new CryptoSocketClient();
-        if (client.contactServer(hostName, port)) {
+    public void socketEncode(String hostName, int port) throws SocketException {
+        try {
+            CryptoSocketClient client = new CryptoSocketClient();
+            client.contactServer(hostName, port);
             String cipher = client.encode(crypto.getPlainText(), crypto.getPassword());
-            if (cipher != null) {
-                crypto.setCipher(cipher);
-                this.fireUpdate();
-                return true;
-            } else {
-                return false;
-            }
-        }
-        return false;
-    }
-
-    public boolean localDecode(String password) {
-        try {
-            if (isCipherSet()) {
-                CryptoTool decoder = new CryptoTool();
-                // Decode the cipher with the given password and save the plain text in the plainText variable
-                byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
-                InputStream is = new ByteArrayInputStream(bytes);
-                byte[] plainText = decoder.decode(is, password);
-                crypto.setPlainText(new String(plainText));
-                this.fireUpdate();
-                return true;
-            }
-            else return false;
-        } catch (Exception e) {
-            e.printStackTrace();
-            crypto.setPlainText(null);
-            this.fireUpdate();
-            return false;
-        }
-    }
-
-    public boolean socketDecode(String hostName, int port, String password) {
-        try {
-            if (isCipherSet()) {
-                CryptoSocketClient client = new CryptoSocketClient();
-                if (client.contactServer(hostName, port)) {
-                    String plainText = client.decode(crypto.getCipher(), password);
-                    if (plainText != null) {
-                        crypto.setPlainText(plainText);
-                        this.fireUpdate();
-                        return true;
-                    }
+                if (cipher != null) {
+                    crypto.setCipher(cipher);
+                    this.fireUpdate();
                 }
-            }
-            return false;
+        } catch (SocketException e) {
+            crypto.setCipher(null);
+            this.fireUpdate();
+            throw new SocketException();
+        }
+    }
+
+    public void rmiEncode(String hostName, int port) throws RemoteException {
+        try {
+            CryptoRmiClient client = new CryptoRmiClient(hostName, port);
+            System.out.println(crypto.getCipher());
+            crypto = client.encode(crypto);
+            System.out.println(crypto.getCipher());
+            this.fireUpdate();
+        } catch (Exception e) {
+            crypto.setCipher(null);
+            this.fireUpdate();
+            throw new RemoteException();
+        }
+    }
+
+    public boolean localDecode() {
+        try {
+            CryptoTool decoder = new CryptoTool();
+            // Decode the cipher with the given password and save the plain text in the plainText variable
+            byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
+            InputStream is = new ByteArrayInputStream(bytes);
+            byte[] plainText = decoder.decode(is, crypto.getPassword());
+            crypto.setPlainText(new String(plainText));
+            this.fireUpdate();
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             crypto.setPlainText(null);
             this.fireUpdate();
             return false;
+        }
+    }
+
+    public void socketDecode(String hostName, int port) throws SocketException, InvalidKeyException {
+            CryptoSocketClient client = new CryptoSocketClient();
+            client.contactServer(hostName, port);
+            String plainText = client.decode(crypto.getCipher(), crypto.getPassword());
+            if (plainText != null) {
+                crypto.setPlainText(plainText);
+                this.fireUpdate();
+            }
+            else {
+                crypto.setPlainText(null);
+                this.fireUpdate();
+                throw new InvalidKeyException();
+            }
+    }
+
+    public void rmiDecode(String hostName, int port) throws RemoteException, InvalidKeyException {
+        try {
+            System.out.println("rmiDecode start");
+            CryptoRmiClient client = new CryptoRmiClient(hostName, port);
+            crypto = client.decode(crypto);
+            this.fireUpdate();
+            //return true;
+        } catch (InvalidKeyException e) {
+            crypto.setPlainText(null);
+            this.fireUpdate();
+            throw new InvalidKeyException(e);
+        } catch (MalformedURLException | NotBoundException | RemoteException e) {
+            crypto.setPlainText(null);
+            this.fireUpdate();
+            throw new RemoteException();
         }
     }
 

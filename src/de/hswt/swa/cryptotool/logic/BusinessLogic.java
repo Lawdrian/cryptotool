@@ -7,6 +7,9 @@ import de.hswt.swa.cryptotool.data.EventType;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.net.SocketException;
+import java.rmi.RemoteException;
+import java.security.InvalidKeyException;
 import java.util.Properties;
 
 public class BusinessLogic {
@@ -35,12 +38,30 @@ public class BusinessLogic {
 
     public boolean saveAsCryptoFile(File file) {return model.saveAsCryptoFile(file);}
 
-    public boolean localEncode() {return model.localEncode();}
+    public boolean localEncode() {
+        return model.localEncode();
+    }
 
-    public boolean socketEncode() {return model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));}
+    public void socketEncode() throws SocketException {
+        model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
+    }
 
-    public boolean localDecode(String password) {return model.localDecode(password);}
-    public boolean socketDecode(String password) {return model.socketDecode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")), password);}
+    public void rmiEncode() throws RemoteException {
+        model.rmiEncode(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    }
+
+    public boolean localDecode() {
+        return model.localDecode();
+    }
+
+    public void socketDecode() throws SocketException, InvalidKeyException {
+        model.socketDecode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
+    }
+
+    public void rmiDecode() throws RemoteException, InvalidKeyException {
+        model.rmiDecode(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    }
+
     public boolean isPlainTextSet() {return model.isPlainTextSet();}
 
     public boolean isPasswordSet() {return model.isPasswordSet();}

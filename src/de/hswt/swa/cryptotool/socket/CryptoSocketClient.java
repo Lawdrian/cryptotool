@@ -32,7 +32,11 @@ public class CryptoSocketClient {
         String serverHost = "localhost";
         int port = 2200;
         CryptoSocketClient client = new CryptoSocketClient();
-        client.contactServer(serverHost, port);
+        try {
+            client.contactServer(serverHost, port);
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
     }
 
     //----------------- Anfrage -----------------------------
@@ -43,7 +47,7 @@ public class CryptoSocketClient {
      * @param serverHost der DNS Name des Rechner smit dem Server-Programm
      * @param port der Port auf dem das Server-Programm lauscht.
      */
-    public boolean contactServer(String serverHost, int port) {
+    public void contactServer(String serverHost, int port) throws SocketException {
         try {
             // Contact the server
             server = new Socket(serverHost, port);
@@ -56,10 +60,8 @@ public class CryptoSocketClient {
             sendMessage(ConnectionState.CLIENT_CONNECTION_REQUEST.name());
             waitForMessage(ConnectionState.SERVER_CONNECTION_ACCEPT.name());
             System.out.println("Connection with server established.");
-            return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+            throw new SocketException();
         }
     }
 

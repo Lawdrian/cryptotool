@@ -64,11 +64,15 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // fourth item: encode the plain text via socket connection
         MenuItem socketEncodeItem = new MenuItem("Socket encode");
         socketEncodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
+        // fifth item: encode the plain text via rmi connection
+        MenuItem rmiEncodeItem = new MenuItem("Rmi encode");
+        rmiEncodeItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCODE));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
         textMenu.getItems().add(localEncodeItem);
         textMenu.getItems().add(socketEncodeItem);
+        textMenu.getItems().add(rmiEncodeItem);
 
 
         // a cipher menu in the menu bar
@@ -85,11 +89,15 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // fourth item: decode the cipher via socket connection
         MenuItem socketDecodeItem = new MenuItem("Socket decode");
         socketDecodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
+        // fifth item: decode the cipher via rmi connection
+        MenuItem rmiDecodeItem = new MenuItem("Rmi decode");
+        rmiDecodeItem.setOnAction(controller.getEventHandler(EventType.RMI_DECODE));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
         cipherMenu.getItems().add(localDecodeItem);
         cipherMenu.getItems().add(socketDecodeItem);
+        cipherMenu.getItems().add(rmiDecodeItem);
 
 
         // a crypto object menu in the menu bar
@@ -150,8 +158,8 @@ public class MainFrame extends Application implements CryptoModelObserver {
         statusPane.setPrefHeight(20);
         statusLines = new ListView<>();
         statusLines.getItems().addListener((ListChangeListener<String>)c->{
-            System.out.println(statusLines.getItems());
-            System.out.println(statusLines.getItems().size());
+            //System.out.println(statusLines.getItems());
+            //System.out.println(statusLines.getItems().size());
             statusLines.scrollTo(statusLines.getItems().size()+1);
             statusPane.setContent(statusLines);
         });

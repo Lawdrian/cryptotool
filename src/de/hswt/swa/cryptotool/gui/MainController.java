@@ -8,6 +8,9 @@ import javafx.event.EventHandler;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.net.SocketException;
+import java.rmi.RemoteException;
+import java.security.InvalidKeyException;
 import java.util.Optional;
 
 import static de.hswt.swa.cryptotool.data.EventType.*;
@@ -30,8 +33,8 @@ public class MainController {
             case IMPORT_TEXT, IMPORT_CIPHER, IMPORT_CRYPTO: return new ImportFileHandler(eventType);
             case RESET_FIELDS:return new ResetFieldsHandler();
             case SAVE_TEXT, SAVE_CIPHER, SAVE_CRYPTO: return new SaveHandler(eventType);
-            case LOCAL_ENCODE, SOCKET_ENCODE: return new EncodeHandler(eventType);
-            case LOCAL_DECODE, SOCKET_DECODE: return new DecodeHandler(eventType);
+            case LOCAL_ENCODE, SOCKET_ENCODE, RMI_ENCODE: return new EncodeHandler(eventType);
+            case LOCAL_DECODE, SOCKET_DECODE, RMI_DECODE: return new DecodeHandler(eventType);
             default: return null;
         }
 
@@ -117,9 +120,6 @@ public class MainController {
 
     }
 
-
-
-
     class EncodeHandler implements EventHandler<ActionEvent> {
 
         private final EventType eventType;
@@ -144,18 +144,29 @@ public class MainController {
                         switch (eventType) {
                             case LOCAL_ENCODE:
                                 if (logic.localEncode()) {
-                                    view.addStatus("Text has been successfully encoded.");
+                                    view.addStatus("Text has been successfully encoded locally.");
                                 } else {
-                                    view.addStatus("Text couldn't be encoded.");
-                                    view.openAlert("Text couldn't be encoded.");
+                                    view.addStatus("Text couldn't be encoded locally.");
+                                    view.openAlert("Text couldn't be encoded locally.");
                                 }
                                 break;
                             case SOCKET_ENCODE:
-                                if(logic.socketEncode()) {
-                                    view.addStatus("Text has been successfully encoded.");
-                                } else {
-                                    view.addStatus("Text couldn't be encoded.");
-                                    view.openAlert("Text couldn't be encoded.");
+                                try {
+                                    logic.socketEncode();
+                                    view.addStatus("Text has been successfully encoded with socket.");
+                                } catch (SocketException e) {
+                                    e.printStackTrace();
+                                    view.addStatus("Text couldn't be encoded with socket.");
+                                    view.openAlert("Text couldn't be encoded with socket.");
+                                }
+                                break;
+                            case RMI_ENCODE:
+                                try {
+                                    logic.rmiEncode();
+                                    view.addStatus("Text has been successfully encoded with rmi.");
+                                } catch (RemoteException e) {
+                                    view.addStatus("Text couldn't be encoded with rmi.");
+                                    view.openAlert("Text couldn't be encoded with rmi.");
                                 }
                                 break;
                             default:
@@ -187,28 +198,50 @@ public class MainController {
                 // Create dialog component where the user can type in a password and start the encoding.
                 Optional<String> result = view.openPasswordDialog(1);
                 result.ifPresent(password -> {
-                    switch (eventType) {
-                        case LOCAL_DECODE:
-                            if (logic.localDecode(password)) {
-                                view.addStatus("Text has been successfully decoded.");
-                            }
-                            else {
-                                view.addStatus("Wrong password.");
-                                view.openAlert("Wrong password.");
-                            }
-                            break;
-                        case SOCKET_DECODE:
-                            if (logic.socketDecode(password)) {
-                                view.addStatus("Text has been successfully decoded.");
-                            }
-                            else {
-                                view.addStatus("Wrong password.");
-                                view.openAlert("Wrong password.");
-                            }
-                            break;
-                        default:
-                            view.addStatus("This encoding has not been implemented yet.");
-                            break;
+                    logic.setPassword(password);
+                    if (logic.isPasswordSet()) {
+                        System.out.println("Password has been set.");
+                        switch (eventType) {
+                            case LOCAL_DECODE:
+                                if (logic.localDecode()) {
+                                    view.addStatus("Text has been successfully decoded locally.");
+                                } else {
+                                    view.addStatus("Wrong password.");
+                                    view.openAlert("Wrong password.");
+                                }
+                                break;
+                            case SOCKET_DECODE:
+                                try {
+                                    logic.socketDecode();
+                                    view.addStatus("Text has been successfully decoded with socket.");
+                                } catch (SocketException e){
+                                    e.printStackTrace();
+                                    view.addStatus("Connection with server failed.");
+                                    view.openAlert("Connection with server failed.");
+                                } catch (InvalidKeyException e) {
+                                    e.printStackTrace();
+                                    view.addStatus("Wrong password.");
+                                    view.openAlert("Wrong password.");
+                                }
+                                break;
+                            case RMI_DECODE:
+                                try {
+                                    logic.rmiDecode();
+                                    view.addStatus("Text has been successfully decoded with rmi.");
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                    view.addStatus("Connection with server failed.");
+                                    view.openAlert("Connection with server failed.");
+                                } catch (InvalidKeyException e ) {
+                                    e.printStackTrace();
+                                    view.addStatus("Wrong password.");
+                                    view.openAlert("Wrong password.");
+                                }
+                                break;
+                            default:
+                                view.addStatus("This encoding has not been implemented yet.");
+                                break;
+                        }
                     }
                 });
             }

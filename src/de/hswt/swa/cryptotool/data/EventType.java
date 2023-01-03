@@ -5,10 +5,12 @@ public enum EventType {
         SAVE_TEXT,
         LOCAL_ENCODE,
         SOCKET_ENCODE,
+        RMI_ENCODE,
         IMPORT_CIPHER,
         SAVE_CIPHER,
         LOCAL_DECODE,
         SOCKET_DECODE,
+        RMI_DECODE,
         IMPORT_CRYPTO,
         SAVE_CRYPTO,
         RESET_FIELDS
