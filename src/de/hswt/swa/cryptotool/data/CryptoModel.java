@@ -128,6 +128,36 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
+    public void externalEncode(String cmd, String dir) throws IOException, InterruptedException {
+        ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "0", crypto.getPlainText(),crypto.getPassword());
+        Process process = builder.start();
+        process.waitFor();
+        System.out.println("External encode exit value: " + process.exitValue());
+        if (process.exitValue() != 0) {
+            crypto.setCipher(null);
+            this.fireUpdate();
+            throw new IOException();
+        }
+        BufferedReader instream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        StringBuilder cipher = new StringBuilder();
+        String seperator = "";
+        String line = instream.readLine();
+        if (line == null) {
+            crypto.setCipher(null);
+            this.fireUpdate();
+            throw new IOException();
+        }
+        while (line != null) {
+            cipher.append(seperator);
+            seperator = System.getProperty("line.separator");
+            cipher.append(line);
+            line = instream.readLine();
+        }
+        instream.close();
+        crypto.setCipher(cipher.toString());
+        this.fireUpdate();
+    }
+
     public void socketEncode(String hostName, int port) throws SocketException {
         try {
             CryptoSocketClient client = new CryptoSocketClient();
@@ -174,6 +204,34 @@ public class CryptoModel implements CryptoModelObservable{
             this.fireUpdate();
             return false;
         }
+    }
+
+    public void externalDecode(String cmd, String dir) throws IOException, InterruptedException {
+        ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "1", crypto.getCipher(),crypto.getPassword());
+        Process process = builder.start();
+        process.waitFor();
+        System.out.println("External decode exit value: " + process.exitValue());
+        if (process.exitValue() != 0) {
+            throw new IOException();
+        }
+        BufferedReader instream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        StringBuilder plainText = new StringBuilder();
+        String seperator = "";
+        String line = instream.readLine();
+        if (line == null) {
+            crypto.setPlainText(null);
+            this.fireUpdate();
+            throw new IOException();
+        }
+        while (line != null) {
+            plainText.append(seperator);
+            seperator = System.getProperty("line.separator");
+            plainText.append(line);
+            line = instream.readLine();
+        }
+        instream.close();
+        crypto.setPlainText(plainText.toString());
+        this.fireUpdate();
     }
 
     public void socketDecode(String hostName, int port) throws SocketException, InvalidKeyException {

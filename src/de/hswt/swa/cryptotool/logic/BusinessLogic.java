@@ -7,6 +7,7 @@ import de.hswt.swa.cryptotool.data.EventType;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
@@ -42,6 +43,8 @@ public class BusinessLogic {
         return model.localEncode();
     }
 
+    public void externalEncode() throws IOException, InterruptedException { model.externalEncode(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
+
     public void socketEncode() throws SocketException {
         model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
     }
@@ -53,6 +56,8 @@ public class BusinessLogic {
     public boolean localDecode() {
         return model.localDecode();
     }
+
+    public void externalDecode() throws IOException, InterruptedException { model.externalDecode(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
 
     public void socketDecode() throws SocketException, InvalidKeyException {
         model.socketDecode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));

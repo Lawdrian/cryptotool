@@ -8,6 +8,7 @@ import javafx.event.EventHandler;
 import javafx.stage.FileChooser;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
@@ -33,8 +34,8 @@ public class MainController {
             case IMPORT_TEXT, IMPORT_CIPHER, IMPORT_CRYPTO: return new ImportFileHandler(eventType);
             case RESET_FIELDS:return new ResetFieldsHandler();
             case SAVE_TEXT, SAVE_CIPHER, SAVE_CRYPTO: return new SaveHandler(eventType);
-            case LOCAL_ENCODE, SOCKET_ENCODE, RMI_ENCODE: return new EncodeHandler(eventType);
-            case LOCAL_DECODE, SOCKET_DECODE, RMI_DECODE: return new DecodeHandler(eventType);
+            case LOCAL_ENCODE, EXTERNAL_ENCODE, SOCKET_ENCODE, RMI_ENCODE: return new EncodeHandler(eventType);
+            case LOCAL_DECODE, EXTERNAL_DECODE ,SOCKET_DECODE, RMI_DECODE: return new DecodeHandler(eventType);
             default: return null;
         }
 
@@ -150,6 +151,20 @@ public class MainController {
                                     view.openAlert("Text couldn't be encoded locally.");
                                 }
                                 break;
+                            case EXTERNAL_ENCODE:
+                                try {
+                                    logic.externalEncode();
+                                    view.addStatus("Text has been successfully encoded locally.");
+                                } catch (IOException e){
+                                    e.printStackTrace();
+                                    view.addStatus("Text couldn't be encoded externally.");
+                                    view.openAlert("Text couldn't be encoded externally.");
+                                } catch (InterruptedException e) {
+                                    e.printStackTrace();
+                                    view.addStatus("Problem with external program.");
+                                    view.openAlert("Problem with external program.");
+                                }
+                                break;
                             case SOCKET_ENCODE:
                                 try {
                                     logic.socketEncode();
@@ -206,6 +221,20 @@ public class MainController {
                                 if (logic.localDecode()) {
                                     view.addStatus("Text has been successfully decoded locally.");
                                 } else {
+                                    view.addStatus("Wrong password.");
+                                    view.openAlert("Wrong password.");
+                                }
+                                break;
+                            case EXTERNAL_DECODE:
+                                try {
+                                    logic.externalDecode();
+                                    view.addStatus("Text has been successfully decoded externally.");
+                                } catch (InterruptedException e){
+                                    e.printStackTrace();
+                                    view.addStatus("Error occurred during program execution.");
+                                    view.openAlert("Error occurred during program execution.");
+                                } catch (IOException e) {
+                                    e.printStackTrace();
                                     view.addStatus("Wrong password.");
                                     view.openAlert("Wrong password.");
                                 }

@@ -61,16 +61,20 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // third item: locally encode the plain text
         MenuItem localEncodeItem = new MenuItem("Local encode");
         localEncodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
-        // fourth item: encode the plain text via socket connection
+        // fourth item: locally encode the plain text
+        MenuItem externalEncodeItem = new MenuItem("External encode");
+        externalEncodeItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_ENCODE));
+        // fifth item: encode the plain text via socket connection
         MenuItem socketEncodeItem = new MenuItem("Socket encode");
         socketEncodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
-        // fifth item: encode the plain text via rmi connection
+        // sixth item: encode the plain text via rmi connection
         MenuItem rmiEncodeItem = new MenuItem("Rmi encode");
         rmiEncodeItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCODE));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
         textMenu.getItems().add(localEncodeItem);
+        textMenu.getItems().add(externalEncodeItem);
         textMenu.getItems().add(socketEncodeItem);
         textMenu.getItems().add(rmiEncodeItem);
 
@@ -86,16 +90,20 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // third item: locally decode the cipher
         MenuItem localDecodeItem = new MenuItem("Local decode");
         localDecodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
-        // fourth item: decode the cipher via socket connection
+        // fourth item: externally decode the cipher
+        MenuItem externalDecodeItem = new MenuItem("External decode");
+        externalDecodeItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_DECODE));
+        // fifth item: decode the cipher via socket connection
         MenuItem socketDecodeItem = new MenuItem("Socket decode");
         socketDecodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
-        // fifth item: decode the cipher via rmi connection
+        // sixth item: decode the cipher via rmi connection
         MenuItem rmiDecodeItem = new MenuItem("Rmi decode");
         rmiDecodeItem.setOnAction(controller.getEventHandler(EventType.RMI_DECODE));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
         cipherMenu.getItems().add(localDecodeItem);
+        cipherMenu.getItems().add(externalDecodeItem);
         cipherMenu.getItems().add(socketDecodeItem);
         cipherMenu.getItems().add(rmiDecodeItem);
 
