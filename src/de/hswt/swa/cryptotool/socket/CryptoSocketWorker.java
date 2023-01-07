@@ -6,16 +6,28 @@ import java.io.*;
 import java.net.Socket;
 import java.util.Base64;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ * This class relies on the CryptoTool class. Because of that, the project structure
+ * cannot be changed without thought.
+ */
 public class CryptoSocketWorker extends Thread {
 
     private Socket client;
-
     private BufferedReader in;
     private PrintWriter out;
     private String messageFromClient;
 
     public CryptoSocketWorker(Socket clientRequest) {client = clientRequest;}
 
+    /**
+     * This method will be executed when this worker gets started by the server.
+     * First it waits for the client to initialize the handshake via ConnectionState protocol.
+     * After that it waits for the client to either request an encoding or request a decoding.
+     * Further methods will be called if that happens.
+     * The client can also request the connection to be closed. This method closes the connection, if that happens.
+     */
     public void run() {
         try {
             if (client != null) {
@@ -40,10 +52,10 @@ public class CryptoSocketWorker extends Thread {
                     switch (state) {
                         case CLIENT_ENCODE_REQUEST:
                             sendMessage(ConnectionState.SERVER_ENCODE_ACCEPT.name());
-                            handleEncodeRequest();
+                            handleEncryptRequest();
                         case CLIENT_DECODE_REQUEST:
                             sendMessage(ConnectionState.SERVER_DECODE_ACCEPT.name());
-                            handleDecodeRequest();
+                            handleDecryptRequest();
                         case CLIENT_CONNECTION_CLOSE:
                             sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
                             client.close();
@@ -63,67 +75,65 @@ public class CryptoSocketWorker extends Thread {
         }
     }
 
-
-    private void handleEncodeRequest() {
+    /**
+     * Handles server side encoding.<br>
+     * This method first requests the plain text from the client. After receiving the plain text it requests the password to
+     * encrypt the plain text with. It then tries to encrypt the plain text. If it was successful, it sends the cipher to the client.
+     * If not it sends an error message and closes the connection.
+     */
+    private void handleEncryptRequest() {
         try {
-
-            // expecting the next line to be the plain text
             sendMessage(ConnectionState.SERVER_PLAIN_TEXT_REQUEST.name());
             readMessageFromClient(); // plain text
             StringBuilder plainText = new StringBuilder();
             String seperator = "";
+            if (messageFromClient == null) {
+                handleEncryptFailure();
+            }
             while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_PLAIN_TEXT_DONE.name())) {
                 plainText.append(seperator);
                 seperator = System.getProperty("line.separator");
                 plainText.append(messageFromClient);
                 readMessageFromClient();
             }
-            if (!plainText.isEmpty()) {
-                sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
-                readMessageFromClient(); // password
-                StringBuilder password = new StringBuilder();
-                seperator = "";
-                while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_PASSWORD_DONE.name())) {
-                    password.append(seperator);
-                    seperator = System.getProperty("line.separator");
-                    password.append(messageFromClient);
-                    readMessageFromClient();
-                }
-                if (!password.isEmpty()) {
-                    CryptoTool encoder = new CryptoTool();
-                    ByteArrayOutputStream outByte = new ByteArrayOutputStream();
-                    boolean successfulEncode = encoder.encode(outByte, plainText.toString().getBytes(), password.toString());
-                    System.out.println(successfulEncode);
-                    if (successfulEncode) {
-                        String s = Base64.getEncoder().encodeToString(outByte.toByteArray());
-                        sendMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
-                        sendMessage(s);
-                    } else {
-                        sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
-                        sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
-                        client.close();
-                    }
-                } else {
-                    sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
-                    sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
-                    client.close();
-                }
-            } else {
-                sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
-                sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
-                client.close();
+            sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
+            readMessageFromClient(); // password
+            if (messageFromClient == null) {
+                handleEncryptFailure();
             }
-
+            StringBuilder password = readPassword();
+            CryptoTool cryptoTool = new CryptoTool();
+            ByteArrayOutputStream outByte = new ByteArrayOutputStream();
+            boolean successfulEncrypt = cryptoTool.encrypt(outByte, plainText.toString().getBytes(), password.toString());
+            System.out.println(successfulEncrypt);
+            if (successfulEncrypt) {
+                String s = Base64.getEncoder().encodeToString(outByte.toByteArray());
+                sendMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
+                sendMessage(s);
+                client.close();
+                outByte.close();
+            } else {
+                outByte.close();
+                handleEncryptFailure();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void handleDecodeRequest() {
+    /**
+     * Handles server side decoding.<br>
+     * This method first requests the cipher from the client. After receiving the cipher it requests the password to
+     * decrypt the cipher with. It then tries to decrypt the cipher. If it was successful, it sends the plain text to the client.
+     * If not it sends an error message and closes the connection.
+     */
+    private void handleDecryptRequest() {
         try {
-            // expecting the next line to be the cipher
             sendMessage(ConnectionState.SERVER_CIPHER_REQUEST.name());
             readMessageFromClient(); // cipher
+            if (messageFromClient == null) {
+                handleDecryptFailure();
+            }
             StringBuilder cipher = new StringBuilder();
             String seperator = "";
             while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_CIPHER_DONE.name())) {
@@ -132,44 +142,28 @@ public class CryptoSocketWorker extends Thread {
                 cipher.append(messageFromClient);
                 readMessageFromClient();
             }
-            if (!cipher.isEmpty()) {
-                sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
-                readMessageFromClient(); // password
-                StringBuilder password = new StringBuilder();
-                seperator = "";
-                while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_PASSWORD_DONE.name())) {
-                    password.append(seperator);
-                    seperator = System.getProperty("line.separator");
-                    password.append(messageFromClient);
-                    readMessageFromClient();
-                }
-                if (!password.isEmpty()) {
-                    try {
-                        CryptoTool decoder = new CryptoTool();
-                        byte[] bytes = Base64.getDecoder().decode(cipher.toString());
-                        InputStream is = new ByteArrayInputStream(bytes);
-                        byte[] plainText = decoder.decode(is, password.toString());
-                        if (plainText != null) {
-                            sendMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
-                            sendMessage(new String(plainText));
-                            sendMessage(ConnectionState.SERVER_PLAIN_TEXT_DONE.name());
-                        } else {
-                            sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
-                        }
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
-                    sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
-                    client.close();
-                }
-            } else {
-                sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
-                sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
-                client.close();
+            sendMessage(ConnectionState.SERVER_PASSWORD_REQUEST.name());
+            readMessageFromClient(); // password
+            if (messageFromClient == null) {
+                handleDecryptFailure();
             }
-
+            StringBuilder password = readPassword();
+            try {
+                CryptoTool cryptoTool = new CryptoTool();
+                byte[] bytes = Base64.getDecoder().decode(cipher.toString());
+                InputStream is = new ByteArrayInputStream(bytes);
+                byte[] plainText = cryptoTool.decrypt(is, password.toString());
+                is.close();
+                if (plainText != null) {
+                    sendMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
+                    sendMessage(new String(plainText));
+                    sendMessage(ConnectionState.SERVER_PLAIN_TEXT_DONE.name());
+                } else {
+                    handleDecryptFailure();
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -185,9 +179,40 @@ public class CryptoSocketWorker extends Thread {
         messageFromClient = msg;
     }
 
+    /**
+     * This method is a helper method that reads the password from the client.
+     * @return StringBuilder password.
+     * @throws IOException
+     */
+    private StringBuilder readPassword() throws IOException {
+        String seperator;
+        StringBuilder password = new StringBuilder();
+        seperator = "";
+        while (messageFromClient != null && !messageFromClient.equals(ConnectionState.CLIENT_PASSWORD_DONE.name())) {
+            password.append(seperator);
+            seperator = System.getProperty("line.separator");
+            password.append(messageFromClient);
+            readMessageFromClient();
+        }
+        return password;
+    }
+
     private void sendMessage(String msg) {
         out.println(msg);
         out.flush();
     }
+
+    private void handleEncryptFailure() throws IOException {
+        sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
+        sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+        this.client.close();
+    }
+
+    private void handleDecryptFailure() throws IOException {
+        sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
+        sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
+        this.client.close();
+    }
+
 
 }

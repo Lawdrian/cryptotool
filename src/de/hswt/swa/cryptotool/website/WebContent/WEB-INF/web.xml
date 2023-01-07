@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<web-app>
+    <servlet>
+        <servlet-name>CryptoPage</servlet-name>
+        <servlet-class>de.hswt.swa.cryptotool.website.WebContent.CryptoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CryptoPage</servlet-name>
+        <url-pattern>/crypto</url-pattern>
+    </servlet-mapping>
+</web-app>

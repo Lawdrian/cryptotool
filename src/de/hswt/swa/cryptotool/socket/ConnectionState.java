@@ -1,5 +1,8 @@
 package de.hswt.swa.cryptotool.socket;
 
+/**
+ * This enum stores all messages that the socket client and socket server use to sync their connection and communicate with each other.
+ */
 public enum ConnectionState {
     CLIENT_CONNECTION_REQUEST,
     CLIENT_CONNECTION_CLOSE,

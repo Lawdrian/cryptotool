@@ -5,6 +5,7 @@ import de.hswt.swa.cryptotool.data.CryptoModelObserver;
 import de.hswt.swa.cryptotool.data.EventType;
 import javafx.application.Application;
 import javafx.collections.ListChangeListener;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -18,8 +19,7 @@ import java.io.File;
 import java.util.Optional;
 
 /**
- * This Class..
- *
+ * This Class is the main application for the crypto tool. It creates the whole gui.
  * @author Adrian Wild
  * @version 1.0
  */
@@ -27,9 +27,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
 
     private MainController controller;
     private Stage mainStage;
-
     private ListView statusLines;
-
     private TextArea plainTextArea;
     private TextArea cipherTextArea;
 
@@ -37,7 +35,13 @@ public class MainFrame extends Application implements CryptoModelObserver {
         launch(args);
     }
 
-    @Override
+    /**
+     * This method gets called when the main method is being executed.<br>
+     * It creates a window with a menubar at the top and 2 text fields in the center. At the bottom is a status field
+     * and on the right side a button to reset all fields.
+     * @param stage Stage object.
+     * @throws Exception
+     */
     public void start(Stage stage) throws Exception {
         controller = new MainController(this);
 
@@ -58,25 +62,25 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // second item: save the plain text to the file system
         MenuItem saveTextItem = new MenuItem("Save");
         saveTextItem.setOnAction(controller.getEventHandler(EventType.SAVE_TEXT));
-        // third item: locally encode the plain text
-        MenuItem localEncodeItem = new MenuItem("Local encode");
-        localEncodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
-        // fourth item: locally encode the plain text
-        MenuItem externalEncodeItem = new MenuItem("External encode");
-        externalEncodeItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_ENCODE));
-        // fifth item: encode the plain text via socket connection
-        MenuItem socketEncodeItem = new MenuItem("Socket encode");
-        socketEncodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
-        // sixth item: encode the plain text via rmi connection
-        MenuItem rmiEncodeItem = new MenuItem("Rmi encode");
-        rmiEncodeItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCODE));
+        // third item: locally encrypt the plain text
+        MenuItem localEncryptItem = new MenuItem("Local encrypt");
+        localEncryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
+        // fourth item: locally encrypt the plain text
+        MenuItem externalEncryptItem = new MenuItem("External encrypt");
+        externalEncryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_ENCODE));
+        // fifth item: encrypt the plain text via socket connection
+        MenuItem socketEncryptItem = new MenuItem("Socket encrypt");
+        socketEncryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
+        // sixth item: encrypt the plain text via rmi connection
+        MenuItem rmiEncryptItem = new MenuItem("Rmi encrypt");
+        rmiEncryptItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCODE));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
-        textMenu.getItems().add(localEncodeItem);
-        textMenu.getItems().add(externalEncodeItem);
-        textMenu.getItems().add(socketEncodeItem);
-        textMenu.getItems().add(rmiEncodeItem);
+        textMenu.getItems().add(localEncryptItem);
+        textMenu.getItems().add(externalEncryptItem);
+        textMenu.getItems().add(socketEncryptItem);
+        textMenu.getItems().add(rmiEncryptItem);
 
 
         // a cipher menu in the menu bar
@@ -87,25 +91,25 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // second item: save the cipher to the file system
         MenuItem saveCipherItem = new MenuItem("Save");
         saveCipherItem.setOnAction(controller.getEventHandler(EventType.SAVE_CIPHER));
-        // third item: locally decode the cipher
-        MenuItem localDecodeItem = new MenuItem("Local decode");
-        localDecodeItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
-        // fourth item: externally decode the cipher
-        MenuItem externalDecodeItem = new MenuItem("External decode");
-        externalDecodeItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_DECODE));
-        // fifth item: decode the cipher via socket connection
-        MenuItem socketDecodeItem = new MenuItem("Socket decode");
-        socketDecodeItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
-        // sixth item: decode the cipher via rmi connection
-        MenuItem rmiDecodeItem = new MenuItem("Rmi decode");
-        rmiDecodeItem.setOnAction(controller.getEventHandler(EventType.RMI_DECODE));
+        // third item: locally decrypt the cipher
+        MenuItem localDecryptItem = new MenuItem("Local decrypt");
+        localDecryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
+        // fourth item: externally decrypt the cipher
+        MenuItem externalDecryptItem = new MenuItem("External decrypt");
+        externalDecryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_DECODE));
+        // fifth item: decrypt the cipher via socket connection
+        MenuItem socketDecryptItem = new MenuItem("Socket decrypt");
+        socketDecryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
+        // sixth item: decrypt the cipher via rmi connection
+        MenuItem rmiDecryptItem = new MenuItem("Rmi decrypt");
+        rmiDecryptItem.setOnAction(controller.getEventHandler(EventType.RMI_DECODE));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
-        cipherMenu.getItems().add(localDecodeItem);
-        cipherMenu.getItems().add(externalDecodeItem);
-        cipherMenu.getItems().add(socketDecodeItem);
-        cipherMenu.getItems().add(rmiDecodeItem);
+        cipherMenu.getItems().add(localDecryptItem);
+        cipherMenu.getItems().add(externalDecryptItem);
+        cipherMenu.getItems().add(socketDecryptItem);
+        cipherMenu.getItems().add(rmiDecryptItem);
 
 
         // a crypto object menu in the menu bar
@@ -121,7 +125,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         cryptoMenu.getItems().add(saveCryptoItem);
 
 
-        // add the file menus to the menubar
+        // add the menus to the menubar
         menu.getMenus().addAll(textMenu);
         menu.getMenus().addAll(cipherMenu);
         menu.getMenus().addAll(cryptoMenu);
@@ -129,8 +133,11 @@ public class MainFrame extends Application implements CryptoModelObserver {
         // add the menu bar to the window
         root.setTop(menu);
 
+        // create button to reset text fields
         Button resetFieldsButton = new Button("Reset Fields");
         resetFieldsButton.setOnAction(controller.getEventHandler(EventType.RESET_FIELDS));
+
+        // create the two text fields
         plainTextArea = new TextArea();
         plainTextArea.setEditable(false);
         plainTextArea.setWrapText(true);
@@ -154,7 +161,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         mainBox.getChildren().add(bottomBox);
         plainTextArea.prefWidthProperty().bind(mainBox.widthProperty().multiply(0.6));
         cipherTextArea.prefWidthProperty().bind(mainBox.widthProperty().multiply(0.6));
-
+        mainBox.setPadding(new Insets(0, 0, 0, 50));
 
         root.setRight(resetFieldsButton);
         root.setCenter(mainBox);
@@ -166,9 +173,9 @@ public class MainFrame extends Application implements CryptoModelObserver {
         statusPane.setPrefHeight(20);
         statusLines = new ListView<>();
         statusLines.getItems().addListener((ListChangeListener<String>)c->{
-            //System.out.println(statusLines.getItems());
-            //System.out.println(statusLines.getItems().size());
-            statusLines.scrollTo(statusLines.getItems().size()+1);
+            System.out.println(statusLines.getItems());
+            System.out.println(statusLines.getItems().size());
+            statusLines.scrollTo(statusLines.getItems().size()-1);
             statusPane.setContent(statusLines);
         });
         statusPane.setContent(statusLines);
@@ -180,31 +187,34 @@ public class MainFrame extends Application implements CryptoModelObserver {
         controller.registerCryptoModelObserver(this);
     }
 
-
+    /**
+     * Opens a file chooser window where the user can select a file.
+     * @param title The title of the window.
+     * @param ext The user can only select files with this extension.
+     * @param dir The directory where the file chooser opens.
+     * @param open Boolean. If true file chooser is used to select file. If false file chooser is used to save file.
+     * @return File object.
+     */
     public File openFileChooser(String title, FileChooser.ExtensionFilter ext, File dir, boolean open) {
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(title);
         fileChooser.setInitialDirectory(dir);
         fileChooser.getExtensionFilters().add(ext);
         if (open) {
-            File file = fileChooser.showOpenDialog(mainStage);
-            return file;
+            return fileChooser.showOpenDialog(mainStage);
         } else {
-            File file = fileChooser.showSaveDialog(mainStage);
-            return file;
+            return fileChooser.showSaveDialog(mainStage);
         }
     }
-
 
     public void addStatus(String msg) {
         statusLines.getItems().add(msg);
     }
 
-
     /**
      * This function opens a javafx alert field that displays a warning to the user.
      *
-     * @param msg   the message that should be displayed to the user.
+     * @param msg The message that should be displayed to the user.
      */
     public void openAlert(String msg) {
         Alert alert = new Alert(Alert.AlertType.WARNING);
@@ -214,23 +224,19 @@ public class MainFrame extends Application implements CryptoModelObserver {
         alert.show();
     }
 
-    public void openPopup(String msg) {
-
-    }
-
     /**
      * This function opens a javafx dialog field where the user has to enter a password and press enter.
      *
-     * @param mode  decides the title of the dialog. Should be 1, if the dialog is used for entering the pwd to decode a cipher.
-     * @return      the pwd as Option type.
+     * @param mode Decides the title of the dialog. Should be 1, if the dialog is used for entering the password to decrypt a cipher.
+     * @return The password as Optional type.
      */
     public Optional<String> openPasswordDialog(Integer mode) {
         String msg;
         if (mode == 1) {
-            msg = "Type in password to decode cipher";
+            msg = "Type in password to decrypt cipher";
         }
         else {
-            msg = "Set password to encode text";
+            msg = "Set password to encrypt text";
         }
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle(msg);
@@ -252,7 +258,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
         okButton.setDisable(true);
 
-        // Disable okButton, if password field is empty
+        // Disable okButton, if password field is empty or longer than 16
         password.textProperty().addListener((observable, oldValue, newValue) -> {
             okButton.setDisable(newValue.trim().isEmpty());
             okButton.setDisable(newValue.length() > 16);
@@ -268,7 +274,10 @@ public class MainFrame extends Application implements CryptoModelObserver {
     }
 
 
-    @Override
+    /**
+     * This method updates the 2 text areas in the main frame.
+     * @param crypto Crypto object.
+     */
     public void update(Crypto crypto) {
         System.out.println("MainFrame update");
         this.plainTextArea.setText(crypto.getPlainText());

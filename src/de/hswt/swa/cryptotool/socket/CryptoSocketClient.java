@@ -8,8 +8,8 @@ import java.net.Socket;
 import java.net.SocketException;
 
 /**
- * Eine Klasse zur Demonstration der Client Technologie bei einer Socket-Verbindung.
- *
+ * @author AdrianWild
+ * @version 1.0
  */
 public class CryptoSocketClient {
 
@@ -20,17 +20,15 @@ public class CryptoSocketClient {
 
     // ------------- Hauptfunktion -----------------------------
 
-    public CryptoSocketClient() {
-    }
+    public CryptoSocketClient() {}
 
     /**
-     *
-     *
+     * Only used for testing purpose.
      */
     public static void main(String[] args) {
 
         String serverHost = "localhost";
-        int port = 2200;
+        int port = 3008;
         CryptoSocketClient client = new CryptoSocketClient();
         try {
             client.contactServer(serverHost, port);
@@ -41,16 +39,17 @@ public class CryptoSocketClient {
 
     //----------------- Anfrage -----------------------------
 
+
     /**
-     * Methode, die die Kommunikation mit dem Server realisiert.
-     *
-     * @param serverHost der DNS Name des Rechner smit dem Server-Programm
-     * @param port der Port auf dem das Server-Programm lauscht.
+     * Initiates a connection with a socket server using a defined protocol.
+     * @param hostName name of the socket server.
+     * @param port port that the socket server is running on.
+     * @throws SocketException
      */
-    public void contactServer(String serverHost, int port) throws SocketException {
+    public void contactServer(String hostName, int port) throws SocketException {
         try {
             // Contact the server
-            server = new Socket(serverHost, port);
+            server = new Socket(hostName, port);
             System.out.println("Contacting server socket....");
 
             in = new BufferedReader(new InputStreamReader(server.getInputStream()));
@@ -65,7 +64,14 @@ public class CryptoSocketClient {
         }
     }
 
-    public String encode(String plainText, String password) {
+    /**
+     * This method first sends an encrypt request, before sending the plain text and then the password to the server.
+     * Afterwards it retrieves the cipher from the server and returns it.
+     * @param plainText The plain text that should be encrypted.
+     * @param password The password used for encoding the plain text.
+     * @return String cipher.
+     */
+    public String encrypt(String plainText, String password) {
         try {
             sendMessage(ConnectionState.CLIENT_ENCODE_REQUEST.name());
             readMessageFromServer();
@@ -90,7 +96,16 @@ public class CryptoSocketClient {
             return null;
         }
     }
-    public String decode(String cipher, String password) {
+
+    /**
+     * This method first sends an decrypt request, before sending the cipher and then the password to the server.
+     * Afterwards it retrieves the plain text from the server and returns it.
+     * If the decoding fails it returns null instead.
+     * @param cipher The cipher that should be decrypted.
+     * @param password The password used for decoding the cipher.
+     * @return String plain text.
+     */
+    public String decrypt(String cipher, String password) {
         try {
             sendMessage(ConnectionState.CLIENT_DECODE_REQUEST.name());
             readMessageFromServer();
@@ -130,6 +145,7 @@ public class CryptoSocketClient {
             readMessageFromServer();
         }
     }
+
 
     private void readMessageFromServer() throws IOException {
         String msg = in.readLine();

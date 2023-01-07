@@ -16,14 +16,23 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public class CryptoModel implements CryptoModelObservable{
 
-
     private Crypto crypto = new Crypto();
+    private final Collection<CryptoModelObserver> observers = new ArrayList<CryptoModelObserver>();
 
-    private Collection<CryptoModelObserver> observers = new ArrayList<CryptoModelObserver>();
-
-    public void readTextFile(String filepath, EventType eventType) {
+    /**
+     * Reads the content of a text file and depending on the @eventType value saves it either in
+     * the @plainText or @cipher variable of the crypto object.
+     * @param filepath The path where the file is stored.
+     * @param eventType EventType object.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
+    public boolean readTextFile(String filepath, EventType eventType) {
 
         try {
             String text = new String(Files.readAllBytes(Paths.get(filepath)));
@@ -43,39 +52,54 @@ public class CryptoModel implements CryptoModelObservable{
             }
             // Inform observer that the state changed
             this.fireUpdate();
+            return false;
 
         } catch (Exception e) {
-            // TODO Auto-generated catch block
-            System.out.println("Error in readTextFile: ");
             e.printStackTrace();
+            return false;
         }
     }
 
-    public void readCryptoFile(File file) {
+    /**
+     * Reads the content of a serialized Crypto object and sets it as the current @crypto object.
+     * @param file The file where the Crypto object is saved in.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
+    public boolean readCryptoFile(File file) {
         try {
             FileInputStream fin = new FileInputStream(file);
             ObjectInputStream oin = new ObjectInputStream(fin);
             // Read objects
             crypto = (Crypto) oin.readObject();
             this.fireUpdate();
+            return false;
         } catch (Exception e) {
-            System.out.println("Exception when saving file");
             e.printStackTrace();
+            return false;
         }
     }
 
+    /**
+     * Saves either the @plainText or @cipher variable to a file depending on the @eventType value.
+     * @param filepath Path of the file where the text should be saved.
+     * @param eventType EventType object.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
     public boolean saveAsTextFile(String filepath, EventType eventType) {
         try {
+            PrintWriter out = new PrintWriter(filepath);
             switch (eventType) {
                 case SAVE_TEXT:
                     if (crypto.getPlainText() != null) {
-                        Files.writeString(Paths.get(filepath), crypto.getPlainText());
+                        out.println(crypto.getPlainText());
+                        out.close();
                         return true;
                     }
                     return false;
                 case SAVE_CIPHER:
                     if (crypto.getCipher() != null) {
-                        Files.writeString(Paths.get(filepath), crypto.getCipher());
+                        out.println(crypto.getCipher());
+                        out.close();
                         return true;
                     }
                     return false;
@@ -85,12 +109,16 @@ public class CryptoModel implements CryptoModelObservable{
             }
 
         } catch (Exception e) {
-            System.out.println("Exception when saving file");
             e.printStackTrace();
             return false;
         }
     }
 
+    /**
+     * Saves the current @crypto object to a file.
+     * @param file The file where the Crypto object should be saved.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
     public boolean saveAsCryptoFile(File file) {
         try {
             FileOutputStream fout = new FileOutputStream(file);
@@ -100,26 +128,29 @@ public class CryptoModel implements CryptoModelObservable{
             oos.close();
             return true;
         } catch (Exception e) {
-            System.out.println("Exception when saving crypto object to file");
             e.printStackTrace();
             return false;
         }
     }
 
-    public boolean localEncode() {
+    /**
+     * Encrypts the @plainText value with the @password value locally using the CryptoTool class.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
+    public boolean localEncrypt() {
         try {
-            CryptoTool encoder = new CryptoTool();
+            CryptoTool cryptoTool = new CryptoTool();
             ByteArrayOutputStream out = new ByteArrayOutputStream();
-            // Encode the plain text with the password and save the encoded text in the cipher variable
-            boolean successfulEncode = encoder.encode(out, crypto.getPlainText().getBytes(), crypto.getPassword());
-            if (successfulEncode) {
+            // encrypt the plain text with the password and save the encrypted text in the cipher variable
+            boolean successfulEncrypt = cryptoTool.encrypt(out, crypto.getPlainText().getBytes(), crypto.getPassword());
+            if (successfulEncrypt) {
                 String s = Base64.getEncoder().encodeToString(out.toByteArray());
                 crypto.setCipher(s);
             } else {
                 crypto.setCipher(null);
             }
             this.fireUpdate();
-            return successfulEncode;
+            return successfulEncrypt;
         } catch (Exception e) {
             e.printStackTrace();
             crypto.setCipher(null);
@@ -128,11 +159,18 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public void externalEncode(String cmd, String dir) throws IOException, InterruptedException {
+    /**
+     * Encrypts the @plainText value with the @password value using an external Java program (.jar).
+     * @param cmd The name of the external Java program.
+     * @param dir The directory where the program is located.
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public void externalEncrypt(String cmd, String dir) throws IOException, InterruptedException {
         ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "0", crypto.getPlainText(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
-        System.out.println("External encode exit value: " + process.exitValue());
+        System.out.println("External encrypt exit value: " + process.exitValue());
         if (process.exitValue() != 0) {
             crypto.setCipher(null);
             this.fireUpdate();
@@ -158,11 +196,18 @@ public class CryptoModel implements CryptoModelObservable{
         this.fireUpdate();
     }
 
-    public void socketEncode(String hostName, int port) throws SocketException {
+    /**
+     * Encrypts the @plainText value with the @password value using a socket. For this method to work the socket server
+     * needs to be running.
+     * @param hostName The address of the socket server.
+     * @param port The port, where the socket is running on.
+     * @throws SocketException
+     */
+    public void socketEncrypt(String hostName, int port) throws SocketException {
         try {
             CryptoSocketClient client = new CryptoSocketClient();
             client.contactServer(hostName, port);
-            String cipher = client.encode(crypto.getPlainText(), crypto.getPassword());
+            String cipher = client.encrypt(crypto.getPlainText(), crypto.getPassword());
                 if (cipher != null) {
                     crypto.setCipher(cipher);
                     this.fireUpdate();
@@ -174,11 +219,18 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public void rmiEncode(String hostName, int port) throws RemoteException {
+    /**
+     * Encrypts the @plainText value with the @password value using a rmi. For this method to work the rmi server
+     * needs to be running.
+     * @param hostName The address of the rmi server.
+     * @param port The port, where the rmi is running on.
+     * @throws RemoteException
+     */
+    public void rmiEncrypt(String hostName, int port) throws RemoteException {
         try {
             CryptoRmiClient client = new CryptoRmiClient(hostName, port);
             System.out.println(crypto.getCipher());
-            crypto = client.encode(crypto);
+            crypto = client.encrypt(crypto);
             System.out.println(crypto.getCipher());
             this.fireUpdate();
         } catch (Exception e) {
@@ -188,13 +240,17 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public boolean localDecode() {
+    /**
+     * Decrypts the @cipher value with the @password value locally using the CryptoTool class.
+     * @return Boolean, true if everything worked fine, false if an exception occurred.
+     */
+    public boolean localDecrypt() {
         try {
-            CryptoTool decoder = new CryptoTool();
-            // Decode the cipher with the given password and save the plain text in the plainText variable
+            CryptoTool cryptoTool = new CryptoTool();
+            // decrypt the cipher with the given password and save the plain text in the plainText variable
             byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
             InputStream is = new ByteArrayInputStream(bytes);
-            byte[] plainText = decoder.decode(is, crypto.getPassword());
+            byte[] plainText = cryptoTool.decrypt(is, crypto.getPassword());
             crypto.setPlainText(new String(plainText));
             this.fireUpdate();
             return true;
@@ -206,11 +262,18 @@ public class CryptoModel implements CryptoModelObservable{
         }
     }
 
-    public void externalDecode(String cmd, String dir) throws IOException, InterruptedException {
+    /**
+     * Decrypts the @cipher value with the @password value using an external Java program (.jar).
+     * @param cmd The name of the external Java program.
+     * @param dir The directory where the program is located.
+     * @throws IOException
+     * @throws InterruptedException
+     */
+    public void externalDecrypt(String cmd, String dir) throws IOException, InterruptedException {
         ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "1", crypto.getCipher(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
-        System.out.println("External decode exit value: " + process.exitValue());
+        System.out.println("External decrypt exit value: " + process.exitValue());
         if (process.exitValue() != 0) {
             throw new IOException();
         }
@@ -234,10 +297,18 @@ public class CryptoModel implements CryptoModelObservable{
         this.fireUpdate();
     }
 
-    public void socketDecode(String hostName, int port) throws SocketException, InvalidKeyException {
+    /**
+     * Decrypts the @cipher value with the @password value using a socket. For this method to work the socket server
+     * needs to be running.
+     * @param hostName The address of the socket server.
+     * @param port The port, where the socket is running on.
+     * @throws SocketException
+     * @throws InvalidKeyException
+     */
+    public void socketDecrypt(String hostName, int port) throws SocketException, InvalidKeyException {
             CryptoSocketClient client = new CryptoSocketClient();
             client.contactServer(hostName, port);
-            String plainText = client.decode(crypto.getCipher(), crypto.getPassword());
+            String plainText = client.decrypt(crypto.getCipher(), crypto.getPassword());
             if (plainText != null) {
                 crypto.setPlainText(plainText);
                 this.fireUpdate();
@@ -249,11 +320,18 @@ public class CryptoModel implements CryptoModelObservable{
             }
     }
 
-    public void rmiDecode(String hostName, int port) throws RemoteException, InvalidKeyException {
+    /**
+     * Decrypts the @cipher value with the @password value using a rmi. For this method to work the rmi server
+     * needs to be running.
+     * @param hostName The address of the rmi server.
+     * @param port The port, where the rmi is running on.
+     * @throws RemoteException
+     */
+    public void rmiDecrypt(String hostName, int port) throws RemoteException, InvalidKeyException {
         try {
-            System.out.println("rmiDecode start");
+            System.out.println("rmiDecrypt start");
             CryptoRmiClient client = new CryptoRmiClient(hostName, port);
-            crypto = client.decode(crypto);
+            crypto = client.decrypt(crypto);
             this.fireUpdate();
             //return true;
         } catch (InvalidKeyException e) {

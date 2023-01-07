@@ -16,14 +16,11 @@ import javax.crypto.spec.SecretKeySpec;
 import java.util.Base64;
 
 public class CryptoTool {
-	
-	final static int ENCODE_MODUS = 0;
-	final static int DECODE_MODUS = 1;
-	
+
 	static String cryptTransformation = "AES";
 	
 
-	public boolean encode(OutputStream writer, byte[] input, String passPhrase) {
+	public boolean encrypt(OutputStream writer, byte[] input, String passPhrase) {
 		
 		Cipher c;
 		try {
@@ -52,7 +49,7 @@ public class CryptoTool {
 		return true;
 	}
 	
-	public byte[] decode(InputStream input, String passPhrase) {
+	public byte[] decrypt(InputStream input, String passPhrase) {
 		
 		Cipher c;
 		try {
@@ -102,7 +99,7 @@ public class CryptoTool {
 				String line = scanner.nextLine();
 				if (line.equalsIgnoreCase("quit")) 
 					break;
-				crypto.encode( out, line.getBytes(), pass);
+				crypto.encrypt( out, line.getBytes(), pass);
 
 				String s = Base64.getEncoder().encodeToString(out.toByteArray() );
 				//System.out.println( s );  
@@ -113,11 +110,11 @@ public class CryptoTool {
 			text.forEach(System.out::println);
 			
 			for (String s : text) {
-				byte[] bytes  = Base64.getDecoder().decode( s );
+				byte[] bytes  = Base64.getDecoder().decode(s);
 				InputStream is = new ByteArrayInputStream( bytes);
-				byte[] plain = crypto.decode(is, pass);
+				byte[] plain = crypto.decrypt(is, pass);
 
-				//String line = new BASE64Encoder().encode(plain);
+				//String line = new BASE64Encryptr().encrypt(plain);
 				System.out.println(new String(plain) );  
 				out.reset();
 			}

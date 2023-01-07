@@ -1,18 +1,16 @@
 package de.hswt.swa.cryptotool.socket;
 
-import de.hswt.swa.cryptotool.socket.CryptoSocketWorker;
-
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * Socket class //TODO text finish
- *
- */
+ * @author AdrianWild
+ * @version 1.0
+ * */
+
 public class CryptoSocketServer {
 
-    // der server socket
     private ServerSocket server;
 
     /**
@@ -27,7 +25,7 @@ public class CryptoSocketServer {
         System.out.println(server.getLocalSocketAddress());
         System.out.println("Server successfully started on port " + port + ".");
 
-        // Dauerschleife
+        // Waiting for clients to contact the server.
         while (true) {
             // Wait for a client request:
             Socket clientRequest = server.accept();
@@ -39,14 +37,10 @@ public class CryptoSocketServer {
     }
 
 
-
-    //---------- Hauptfunktion -------------------------------------
-
     /**
-     * Runnable main function
-     * @param args: console parameter
+     * This method starts the socket server.
      */
-    public static void main(String args[]) {
+    public static void main(String[] args) {
         // Starting server
         try {
             new CryptoSocketServer(3008);

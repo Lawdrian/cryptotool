@@ -13,16 +13,19 @@ import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 import java.util.Properties;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public class BusinessLogic {
 
-
-    private CryptoModel model = new CryptoModel();
-    private Properties properties;
-    private final String propertyFileName = "crypto.properties";
+    private final CryptoModel model = new CryptoModel();
+    private final Properties properties;
 
     public BusinessLogic() {
         properties = new Properties();
         try {
+            String propertyFileName = "crypto.properties";
             BufferedInputStream stream = new BufferedInputStream(new FileInputStream(propertyFileName));
             properties.load(stream);
         } catch (Exception e) {
@@ -30,41 +33,39 @@ public class BusinessLogic {
         }
     }
 
-    public void readTextFile(File file, EventType eventType) {model.readTextFile(file.getAbsolutePath(), eventType);}
-
     public void resetCryptoObject() {model.resetCryptoObject();}
-    public void readCryptoFile(File file) {model.readCryptoFile(file);}
+
+    public boolean readTextFile(File file, EventType eventType) {return model.readTextFile(file.getAbsolutePath(), eventType);}
+
+    public boolean readCryptoFile(File file) {return model.readCryptoFile(file);}
 
     public boolean saveAsTextFile(File file, EventType eventType) {return model.saveAsTextFile(file.getAbsolutePath(), eventType);}
 
     public boolean saveAsCryptoFile(File file) {return model.saveAsCryptoFile(file);}
 
-    public boolean localEncode() {
-        return model.localEncode();
+    public boolean localEncrypt() {return model.localEncrypt();}
+
+    public void externalEncrypt() throws IOException, InterruptedException {model.externalEncrypt(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
+
+    public void socketEncrypt() throws SocketException {
+        model.socketEncrypt(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
     }
 
-    public void externalEncode() throws IOException, InterruptedException { model.externalEncode(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
-
-    public void socketEncode() throws SocketException {
-        model.socketEncode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
+    public void rmiEncrypt() throws RemoteException {
+        model.rmiEncrypt(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
     }
 
-    public void rmiEncode() throws RemoteException {
-        model.rmiEncode(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    public boolean localDecrypt() {return model.localDecrypt();
     }
 
-    public boolean localDecode() {
-        return model.localDecode();
+    public void externalDecrypt() throws IOException, InterruptedException {model.externalDecrypt(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
+
+    public void socketDecrypt() throws SocketException, InvalidKeyException {
+        model.socketDecrypt(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
     }
 
-    public void externalDecode() throws IOException, InterruptedException { model.externalDecode(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
-
-    public void socketDecode() throws SocketException, InvalidKeyException {
-        model.socketDecode(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
-    }
-
-    public void rmiDecode() throws RemoteException, InvalidKeyException {
-        model.rmiDecode(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    public void rmiDecrypt() throws RemoteException, InvalidKeyException {
+        model.rmiDecrypt(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
     }
 
     public boolean isPlainTextSet() {return model.isPlainTextSet();}
@@ -75,8 +76,6 @@ public class BusinessLogic {
 
     public void setPassword(String pw) {model.setPassword(pw);}
 
-    public void registerCryptoModelObserver(CryptoModelObserver cryptoView) {
-        model.registerObserver(cryptoView);
+    public void registerCryptoModelObserver(CryptoModelObserver cryptoView) {model.registerObserver(cryptoView);
     }
-
 }
