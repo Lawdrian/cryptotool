@@ -1,8 +1,7 @@
-package de.hswt.swa.cryptotool.website.WebContent;
+package de.hswt.swa.cryptotool.api;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonSyntaxException;
 import de.hswt.swa.cryptotool.data.Crypto;
 import de.hswt.swa.cryptotool.tools.CryptoTool;
 
@@ -14,7 +13,7 @@ import java.io.*;
 import java.util.Base64;
 import java.util.Scanner;
 
-public class CryptoService extends HttpServlet {
+public class CryptoApiService extends HttpServlet {
 
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         CryptoTool cryptoTool = new CryptoTool();

@@ -1,4 +1,4 @@
-package de.hswt.swa.cryptotool.website.WebContent;
+package de.hswt.swa.cryptotool.website;
 
 import de.hswt.swa.cryptotool.socket.ConnectionState;
 import de.hswt.swa.cryptotool.tools.CryptoTool;

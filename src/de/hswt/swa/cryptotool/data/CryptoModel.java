@@ -15,6 +15,8 @@ import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 import java.util.*;
 
+import static de.hswt.swa.cryptotool.api.CryptoApiClient.callCryptoApi;
+
 /**
  * @author AdrianWild
  * @version 1.0
@@ -250,7 +252,8 @@ public class CryptoModel implements CryptoModelObservable{
      */
     public void apiEncrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
         try {
-            callCryptoApi(hostName, hostSlug, port, "encrypt");
+            crypto = callCryptoApi(hostName, hostSlug, port, "encrypt", crypto);
+            this.fireUpdate();
         } catch (IOException e) {
             e.printStackTrace();
             crypto.setCipher(null);
@@ -374,7 +377,8 @@ public class CryptoModel implements CryptoModelObservable{
      */
     public void apiDecrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
         try {
-            callCryptoApi(hostName, hostSlug, port, "decrypt");
+            crypto = callCryptoApi(hostName, hostSlug, port, "decrypt", crypto);
+            this.fireUpdate();
         } catch (IOException e) {
             e.printStackTrace();
             crypto.setPlainText(null);
@@ -382,51 +386,6 @@ public class CryptoModel implements CryptoModelObservable{
             throw new RemoteException();
         }
     }
-
-    private void callCryptoApi(String hostName, String hostSlug, int port, String method) throws RemoteException, InvalidKeyException {
-        Gson gson = new Gson();
-        try {
-            String urlSpec = "http://" + hostName + ":" + port + "/" + hostSlug;
-            URL url = new URL(urlSpec);
-            HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
-            httpConnection.setDoOutput(true);
-            httpConnection.setRequestMethod("POST");
-
-            JsonObject jsonObject = new JsonObject();
-            String contentJson = gson.toJson(crypto);
-            jsonObject.addProperty("method", method);
-            jsonObject.addProperty("content", contentJson);
-            String requestMessage = gson.toJson(jsonObject);
-            PrintWriter out = new PrintWriter(httpConnection.getOutputStream());
-            out.println(requestMessage);
-            out.close();
-
-            int responseCode = httpConnection.getResponseCode();
-            BufferedReader bufferedReader;
-
-            if (responseCode > 199 && responseCode < 300) {
-                bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
-            } else {
-                bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getErrorStream()));
-            }
-            String responseString = bufferedReader.readLine();
-            JsonObject responseObj = gson.fromJson(responseString, com.google.gson.JsonObject.class);
-            String result = responseObj.get("content").getAsString();
-            crypto = gson.fromJson(result, Crypto.class);
-            if (responseObj.get("error") != null) {
-                // if the server sends an error message, it means that the server couldn't fulfill the request
-                String error = responseObj.get("error").getAsString();
-                System.out.println("error: " + error);
-                throw new InvalidKeyException();
-            }
-            this.fireUpdate();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RemoteException();
-        }
-    }
-
-
 
     public void resetCryptoObject() {
         crypto = new Crypto();

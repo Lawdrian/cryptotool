@@ -17,7 +17,7 @@ public class WebAppTomcat {
         tomcat.setPort(8080);
 
         String contextPath = "/";
-        String webappDir = new File("./src/de/hswt/swa/cryptotool/website/WebContent").getAbsolutePath();
+        String webappDir = new File("./src/de/hswt/swa/cryptotool/website").getAbsolutePath();
 
         tomcat.addWebapp(contextPath, webappDir);
 

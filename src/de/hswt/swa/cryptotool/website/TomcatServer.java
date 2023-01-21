@@ -1,6 +1,5 @@
 package de.hswt.swa.cryptotool.website;
 
-import de.hswt.swa.cryptotool.website.WebContent.CryptoServlet;
 import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;

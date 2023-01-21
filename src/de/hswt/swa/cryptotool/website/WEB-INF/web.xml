@@ -3,7 +3,7 @@
 <web-app>
     <servlet>
         <servlet-name>CryptoPage</servlet-name>
-        <servlet-class>de.hswt.swa.cryptotool.website.WebContent.CryptoServlet</servlet-class>
+        <servlet-class>de.hswt.swa.cryptotool.website.CryptoServlet</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>CryptoPage</servlet-name>
@@ -11,7 +11,7 @@
     </servlet-mapping>
     <servlet>
         <servlet-name>CryptoService</servlet-name>
-        <servlet-class>de.hswt.swa.cryptotool.website.WebContent.CryptoService</servlet-class>
+        <servlet-class>de.hswt.swa.cryptotool.api.CryptoApiService</servlet-class>
     </servlet>
     <servlet-mapping>
         <servlet-name>CryptoService</servlet-name>

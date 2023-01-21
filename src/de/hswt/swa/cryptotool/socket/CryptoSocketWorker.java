@@ -53,9 +53,11 @@ public class CryptoSocketWorker extends Thread {
                         case CLIENT_ENCODE_REQUEST:
                             sendMessage(ConnectionState.SERVER_ENCODE_ACCEPT.name());
                             handleEncryptRequest();
+                            break;
                         case CLIENT_DECODE_REQUEST:
                             sendMessage(ConnectionState.SERVER_DECODE_ACCEPT.name());
                             handleDecryptRequest();
+                            break;
                         case CLIENT_CONNECTION_CLOSE:
                             sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
                             client.close();

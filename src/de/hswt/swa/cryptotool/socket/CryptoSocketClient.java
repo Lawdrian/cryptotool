@@ -88,6 +88,7 @@ public class CryptoSocketClient {
 
                 waitForMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
                 readMessageFromServer(); // cipher
+                sendMessage(ConnectionState.CLIENT_CONNECTION_CLOSE.name());
                 return messageFromServer;
 
             }
@@ -130,6 +131,7 @@ public class CryptoSocketClient {
                     plainText.append(messageFromServer);
                     readMessageFromServer();
                 }
+                sendMessage(ConnectionState.CLIENT_CONNECTION_CLOSE.name());
                 return plainText.toString();
 
             }
