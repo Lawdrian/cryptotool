@@ -47,12 +47,16 @@ public class BusinessLogic {
 
     public void externalEncrypt() throws IOException, InterruptedException {model.externalEncrypt(properties.getProperty("externalName"), properties.getProperty("externalDir"));}
 
-    public void socketEncrypt() throws SocketException {
+    public void socketEncrypt() throws SocketException, InvalidKeyException {
         model.socketEncrypt(properties.getProperty("socketHostName"), Integer.parseInt(properties.getProperty("socketPort")));
     }
 
-    public void rmiEncrypt() throws RemoteException {
+    public void rmiEncrypt() throws RemoteException, InvalidKeyException {
         model.rmiEncrypt(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    }
+
+    public void apiEncrypt() throws RemoteException, InvalidKeyException {
+        model.apiEncrypt(properties.getProperty("apiHostName"), properties.getProperty("apiSlug"), Integer.parseInt(properties.getProperty("apiPort")));
     }
 
     public boolean localDecrypt() {return model.localDecrypt();
@@ -66,6 +70,10 @@ public class BusinessLogic {
 
     public void rmiDecrypt() throws RemoteException, InvalidKeyException {
         model.rmiDecrypt(properties.getProperty("rmiHostName"), Integer.parseInt(properties.getProperty("rmiPort")));
+    }
+
+    public void apiDecrypt() throws RemoteException, InvalidKeyException {
+        model.apiDecrypt(properties.getProperty("apiHostName"), properties.getProperty("apiSlug"), Integer.parseInt(properties.getProperty("apiPort")));
     }
 
     public boolean isPlainTextSet() {return model.isPlainTextSet();}

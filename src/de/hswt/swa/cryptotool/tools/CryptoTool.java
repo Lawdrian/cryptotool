@@ -102,7 +102,6 @@ public class CryptoTool {
 				crypto.encrypt( out, line.getBytes(), pass);
 
 				String s = Base64.getEncoder().encodeToString(out.toByteArray() );
-				//System.out.println( s );  
 				text.add(s);
 				out.reset();
 			}
@@ -114,7 +113,6 @@ public class CryptoTool {
 				InputStream is = new ByteArrayInputStream( bytes);
 				byte[] plain = crypto.decrypt(is, pass);
 
-				//String line = new BASE64Encryptr().encrypt(plain);
 				System.out.println(new String(plain) );  
 				out.reset();
 			}

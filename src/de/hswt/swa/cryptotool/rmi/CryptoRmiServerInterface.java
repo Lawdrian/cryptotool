@@ -12,7 +12,7 @@ import java.security.InvalidKeyException;
  */
 public interface CryptoRmiServerInterface extends Remote {
 
-    Crypto encrypt(Crypto crypto) throws RemoteException;
+    Crypto encrypt(Crypto crypto) throws RemoteException, InvalidKeyException;
 
     Crypto decrypt(Crypto crypto) throws RemoteException, InvalidKeyException;
 

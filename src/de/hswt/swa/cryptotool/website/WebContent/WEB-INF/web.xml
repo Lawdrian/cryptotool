@@ -9,4 +9,12 @@
         <servlet-name>CryptoPage</servlet-name>
         <url-pattern>/crypto</url-pattern>
     </servlet-mapping>
+    <servlet>
+        <servlet-name>CryptoService</servlet-name>
+        <servlet-class>de.hswt.swa.cryptotool.website.WebContent.CryptoService</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CryptoService</servlet-name>
+        <url-pattern>/crypto-service</url-pattern>
+    </servlet-mapping>
 </web-app>

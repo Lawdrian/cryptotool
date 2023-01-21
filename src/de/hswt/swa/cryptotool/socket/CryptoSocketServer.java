@@ -16,21 +16,19 @@ public class CryptoSocketServer {
     /**
      * Constructor: Creates a new server object running on the provided port.
      *
-     * @param port: the port, which the server is running on.
+     * @param port The port, which the server is running on.
      */
     public CryptoSocketServer(int port) throws IOException {
-        // Using port @port:
+        // using port @port:
         server = new ServerSocket(port);
 
         System.out.println(server.getLocalSocketAddress());
         System.out.println("Server successfully started on port " + port + ".");
 
-        // Waiting for clients to contact the server.
+        // wait for a client request:
         while (true) {
-            // Wait for a client request:
+            // process client request:
             Socket clientRequest = server.accept();
-
-            // Process client request:
             CryptoSocketWorker worker = new CryptoSocketWorker(clientRequest);
             worker.start();
         }

@@ -44,7 +44,6 @@ public class CryptoServlet  extends HttpServlet {
             try {
                 ByteArrayOutputStream outByte = new ByteArrayOutputStream();
                 boolean successfulEncrypt = cryptoTool.encrypt(outByte, input.getBytes(), password);
-                System.out.println(successfulEncrypt);
                 if (successfulEncrypt) {
                     output = Base64.getEncoder().encodeToString(outByte.toByteArray());
                     System.out.println("encrypt: " + output);

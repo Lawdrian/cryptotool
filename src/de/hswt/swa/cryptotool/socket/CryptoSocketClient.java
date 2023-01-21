@@ -34,6 +34,7 @@ public class CryptoSocketClient {
             client.contactServer(serverHost, port);
         } catch (SocketException e) {
             e.printStackTrace();
+
         }
     }
 

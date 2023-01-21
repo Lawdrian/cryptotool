@@ -64,16 +64,19 @@ public class MainFrame extends Application implements CryptoModelObserver {
         saveTextItem.setOnAction(controller.getEventHandler(EventType.SAVE_TEXT));
         // third item: locally encrypt the plain text
         MenuItem localEncryptItem = new MenuItem("Local encrypt");
-        localEncryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCODE));
+        localEncryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_ENCRYPT));
         // fourth item: locally encrypt the plain text
         MenuItem externalEncryptItem = new MenuItem("External encrypt");
-        externalEncryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_ENCODE));
+        externalEncryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_ENCRYPT));
         // fifth item: encrypt the plain text via socket connection
         MenuItem socketEncryptItem = new MenuItem("Socket encrypt");
-        socketEncryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCODE));
+        socketEncryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_ENCRYPT));
         // sixth item: encrypt the plain text via rmi connection
-        MenuItem rmiEncryptItem = new MenuItem("Rmi encrypt");
-        rmiEncryptItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCODE));
+        MenuItem rmiEncryptItem = new MenuItem("RMI encrypt");
+        rmiEncryptItem.setOnAction(controller.getEventHandler(EventType.RMI_ENCRYPT));
+        // seventh item: encrypt the plain text via rest api
+        MenuItem apiEncryptItem = new MenuItem("API encrypt");
+        apiEncryptItem.setOnAction(controller.getEventHandler(EventType.API_ENCRYPT));
 
         textMenu.getItems().add(importTextItem);
         textMenu.getItems().add(saveTextItem);
@@ -81,6 +84,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         textMenu.getItems().add(externalEncryptItem);
         textMenu.getItems().add(socketEncryptItem);
         textMenu.getItems().add(rmiEncryptItem);
+        textMenu.getItems().add(apiEncryptItem);
 
 
         // a cipher menu in the menu bar
@@ -93,16 +97,19 @@ public class MainFrame extends Application implements CryptoModelObserver {
         saveCipherItem.setOnAction(controller.getEventHandler(EventType.SAVE_CIPHER));
         // third item: locally decrypt the cipher
         MenuItem localDecryptItem = new MenuItem("Local decrypt");
-        localDecryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECODE));
+        localDecryptItem.setOnAction(controller.getEventHandler(EventType.LOCAL_DECRYPT));
         // fourth item: externally decrypt the cipher
         MenuItem externalDecryptItem = new MenuItem("External decrypt");
-        externalDecryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_DECODE));
+        externalDecryptItem.setOnAction(controller.getEventHandler(EventType.EXTERNAL_DECRYPT));
         // fifth item: decrypt the cipher via socket connection
         MenuItem socketDecryptItem = new MenuItem("Socket decrypt");
-        socketDecryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECODE));
+        socketDecryptItem.setOnAction(controller.getEventHandler(EventType.SOCKET_DECRYPT));
         // sixth item: decrypt the cipher via rmi connection
-        MenuItem rmiDecryptItem = new MenuItem("Rmi decrypt");
-        rmiDecryptItem.setOnAction(controller.getEventHandler(EventType.RMI_DECODE));
+        MenuItem rmiDecryptItem = new MenuItem("RMI decrypt");
+        rmiDecryptItem.setOnAction(controller.getEventHandler(EventType.RMI_DECRYPT));
+        // seventh item: decrypt the cipher via rest api
+        MenuItem apiDecryptItem = new MenuItem("API decrypt");
+        apiDecryptItem.setOnAction(controller.getEventHandler(EventType.API_DECRYPT));
 
         cipherMenu.getItems().add(importCipherItem);
         cipherMenu.getItems().add(saveCipherItem);
@@ -110,6 +117,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         cipherMenu.getItems().add(externalDecryptItem);
         cipherMenu.getItems().add(socketDecryptItem);
         cipherMenu.getItems().add(rmiDecryptItem);
+        cipherMenu.getItems().add(apiDecryptItem);
 
 
         // a crypto object menu in the menu bar
@@ -173,8 +181,6 @@ public class MainFrame extends Application implements CryptoModelObserver {
         statusPane.setPrefHeight(20);
         statusLines = new ListView<>();
         statusLines.getItems().addListener((ListChangeListener<String>)c->{
-            System.out.println(statusLines.getItems());
-            System.out.println(statusLines.getItems().size());
             statusLines.scrollTo(statusLines.getItems().size()-1);
             statusPane.setContent(statusLines);
         });
@@ -236,7 +242,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
             msg = "Type in password to decrypt cipher";
         }
         else {
-            msg = "Set password to encrypt text";
+            msg = "Set password to encrypt text. Mutated vowels aren't allowed.";
         }
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle(msg);
@@ -258,7 +264,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Node okButton = dialog.getDialogPane().lookupButton(okButtonType);
         okButton.setDisable(true);
 
-        // Disable okButton, if password field is empty or longer than 16
+        // disable okButton, if password field is empty or longer than 16
         password.textProperty().addListener((observable, oldValue, newValue) -> {
             okButton.setDisable(newValue.trim().isEmpty());
             okButton.setDisable(newValue.length() > 16);
@@ -282,6 +288,5 @@ public class MainFrame extends Application implements CryptoModelObserver {
         System.out.println("MainFrame update");
         this.plainTextArea.setText(crypto.getPlainText());
         this.cipherTextArea.setText(crypto.getCipher());
-        System.out.println(this.plainTextArea);
     }
 }

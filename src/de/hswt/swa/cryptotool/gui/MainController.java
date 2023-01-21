@@ -46,15 +46,17 @@ public class MainController {
             case SAVE_CIPHER:
             case SAVE_CRYPTO:
                 return new SaveHandler(eventType);
-            case LOCAL_ENCODE:
-            case EXTERNAL_ENCODE:
-            case SOCKET_ENCODE:
-            case RMI_ENCODE:
+            case LOCAL_ENCRYPT:
+            case EXTERNAL_ENCRYPT:
+            case SOCKET_ENCRYPT:
+            case RMI_ENCRYPT:
+            case API_ENCRYPT:
                 return new EncryptHandler(eventType);
-            case LOCAL_DECODE:
-            case EXTERNAL_DECODE:
-            case SOCKET_DECODE:
-            case RMI_DECODE:
+            case LOCAL_DECRYPT:
+            case EXTERNAL_DECRYPT:
+            case SOCKET_DECRYPT:
+            case RMI_DECRYPT:
+            case API_DECRYPT:
                 return new DecryptHandler(eventType);
             default:
                 return null;
@@ -180,10 +182,9 @@ public class MainController {
          * @param event ActionEvent object.
          */
         public void handle(ActionEvent event) {
-            System.out.println(!logic.isPlainTextSet());
-            // Check if plain text field is set
+            // check if plain text field is set
             if (!logic.isPlainTextSet()) {
-                // Make the user import plain text before encoding
+                // make the user import plain text before encoding
                 ImportFileHandler fileImporter = new ImportFileHandler(IMPORT_TEXT);
                 fileImporter.handle(event);
             }
@@ -192,47 +193,55 @@ public class MainController {
                 result.ifPresent(password -> {
                     logic.setPassword(password);
                     if (logic.isPasswordSet()) {
-                        System.out.println("Password has been set.");
                         switch (eventType) {
-                            case LOCAL_ENCODE:
+                            case LOCAL_ENCRYPT:
                                 if (logic.localEncrypt()) {
                                     view.addStatus("Text has been successfully encrypted locally.");
                                 } else {
-                                    view.addStatus("Text couldn't be encrypted locally.");
-                                    view.openAlert("Text couldn't be encrypted locally.");
+                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
                                 }
                                 break;
-                            case EXTERNAL_ENCODE:
+                            case EXTERNAL_ENCRYPT:
                                 try {
                                     logic.externalEncrypt();
                                     view.addStatus("Text has been successfully encrypted locally.");
                                 } catch (IOException e){
                                     e.printStackTrace();
-                                    view.addStatus("Text couldn't be encrypted externally.");
-                                    view.openAlert("Text couldn't be encrypted externally.");
+                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
-                                    view.addStatus("Problem with external program.");
-                                    view.openAlert("Problem with external program.");
+                                    addStatusAndAlert("Text couldn't be encrypted with external program.");
                                 }
                                 break;
-                            case SOCKET_ENCODE:
+                            case SOCKET_ENCRYPT:
                                 try {
                                     logic.socketEncrypt();
                                     view.addStatus("Text has been successfully encrypted with socket.");
                                 } catch (SocketException e) {
                                     e.printStackTrace();
-                                    view.addStatus("Text couldn't be encrypted with socket.");
-                                    view.openAlert("Text couldn't be encrypted with socket.");
+                                    addStatusAndAlert("Connection to socket server failed.");
+                                } catch (InvalidKeyException e) {
+                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
                                 }
                                 break;
-                            case RMI_ENCODE:
+                            case RMI_ENCRYPT:
                                 try {
                                     logic.rmiEncrypt();
                                     view.addStatus("Text has been successfully encrypted with rmi.");
                                 } catch (RemoteException e) {
-                                    view.addStatus("Text couldn't be encrypted with rmi.");
-                                    view.openAlert("Text couldn't be encrypted with rmi.");
+                                    addStatusAndAlert("Connection to rmi server failed.");
+                                } catch (InvalidKeyException e) {
+                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                }
+                                break;
+                            case API_ENCRYPT:
+                                try {
+                                    logic.apiEncrypt();
+                                    view.addStatus("Text has been successfully encrypted with rest api.");
+                                } catch (RemoteException e) {
+                                    addStatusAndAlert("Connection to web server server failed.");
+                                } catch (InvalidKeyException e) {
+                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
                                 }
                                 break;
                             default:
@@ -265,72 +274,77 @@ public class MainController {
          */
         public void handle(ActionEvent event) {
             System.out.println("DecryptHandler");
-            // Check if cipher field is set
+            // check if cipher field is set
             if (!logic.isCipherSet()) {
-                // Make the user import plain text before encoding
+                // make the user import plain text before encoding
                 ImportFileHandler fileImporter = new ImportFileHandler(IMPORT_CIPHER);
                 fileImporter.handle(event);
             }
             if (logic.isCipherSet()) {
-                // Create dialog component where the user can type in a password and start the encoding.
+                // create dialog component where the user can type in a password and start the encoding.
                 Optional<String> result = view.openPasswordDialog(1);
                 result.ifPresent(password -> {
                     logic.setPassword(password);
                     if (logic.isPasswordSet()) {
-                        System.out.println("Password has been set.");
                         switch (eventType) {
-                            case LOCAL_DECODE:
+                            case LOCAL_DECRYPT:
                                 if (logic.localDecrypt()) {
                                     view.addStatus("Text has been successfully decrypted locally.");
                                 } else {
-                                    view.addStatus("Wrong password.");
-                                    view.openAlert("Wrong password.");
+                                    addStatusAndAlert("Wrong password!");
                                 }
                                 break;
-                            case EXTERNAL_DECODE:
+                            case EXTERNAL_DECRYPT:
                                 try {
                                     logic.externalDecrypt();
                                     view.addStatus("Text has been successfully decrypted externally.");
                                 } catch (InterruptedException e){
                                     e.printStackTrace();
-                                    view.addStatus("Error occurred during program execution.");
-                                    view.openAlert("Error occurred during program execution.");
+                                    addStatusAndAlert("Error occurred during program execution.");
                                 } catch (IOException e) {
                                     e.printStackTrace();
-                                    view.addStatus("Wrong password.");
-                                    view.openAlert("Wrong password.");
+                                    addStatusAndAlert("Wrong password!");
                                 }
                                 break;
-                            case SOCKET_DECODE:
+                            case SOCKET_DECRYPT:
                                 try {
                                     logic.socketDecrypt();
                                     view.addStatus("Text has been successfully decrypted with socket.");
                                 } catch (SocketException e){
                                     e.printStackTrace();
-                                    view.addStatus("Connection with server failed.");
-                                    view.openAlert("Connection with server failed.");
+                                    addStatusAndAlert("Connection with socket server failed.");
+
                                 } catch (InvalidKeyException e) {
                                     e.printStackTrace();
-                                    view.addStatus("Wrong password.");
-                                    view.openAlert("Wrong password.");
+                                    addStatusAndAlert("Wrong password!");
                                 }
                                 break;
-                            case RMI_DECODE:
+                            case RMI_DECRYPT:
                                 try {
                                     logic.rmiDecrypt();
                                     view.addStatus("Text has been successfully decrypted with rmi.");
                                 } catch (RemoteException e) {
                                     e.printStackTrace();
-                                    view.addStatus("Connection with server failed.");
-                                    view.openAlert("Connection with server failed.");
+                                    addStatusAndAlert("Connection to rmi server failed.");
                                 } catch (InvalidKeyException e ) {
                                     e.printStackTrace();
-                                    view.addStatus("Wrong password.");
-                                    view.openAlert("Wrong password.");
+                                    addStatusAndAlert("Wrong password!");
+                                }
+                                break;
+                            case API_DECRYPT:
+                                try {
+                                    logic.apiDecrypt();
+                                    view.addStatus("Text has been successfully decrypted with rest api.");
+                                } catch (RemoteException e) {
+                                    e.printStackTrace();
+                                    addStatusAndAlert("Connection to web server failed.");
+                                } catch (InvalidKeyException e ) {
+                                    e.printStackTrace();
+                                    addStatusAndAlert("Wrong password!");
                                 }
                                 break;
                             default:
-                                view.addStatus("This encoding has not been implemented yet.");
+                                addStatusAndAlert("This decryption method has not been implemented yet.");
                                 break;
                         }
                     }
@@ -347,5 +361,10 @@ public class MainController {
 
     public void registerCryptoModelObserver(CryptoModelObserver cryptoView) {
         logic.registerCryptoModelObserver(cryptoView);
+    }
+
+    private void addStatusAndAlert(String msg) {
+        view.addStatus(msg);
+        view.openAlert(msg);
     }
 }

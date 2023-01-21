@@ -1,20 +1,19 @@
 package de.hswt.swa.cryptotool.data;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import de.hswt.swa.cryptotool.rmi.CryptoRmiClient;
 import de.hswt.swa.cryptotool.socket.CryptoSocketClient;
 import de.hswt.swa.cryptotool.tools.CryptoTool;
 
 import java.io.*;
-import java.net.MalformedURLException;
-import java.net.SocketException;
+import java.net.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.Collection;
+import java.util.*;
 
 /**
  * @author AdrianWild
@@ -36,7 +35,6 @@ public class CryptoModel implements CryptoModelObservable{
 
         try {
             String text = new String(Files.readAllBytes(Paths.get(filepath)));
-            System.out.println(eventType);
             switch (eventType) {
                 case IMPORT_TEXT:
                     resetCryptoObject();
@@ -47,12 +45,12 @@ public class CryptoModel implements CryptoModelObservable{
                     crypto.setCipher(text);
                     break;
                 default:
-                    System.out.println("Error occoured during file import");
+                    System.out.println("Error occurred during file import.");
                     break;
             }
-            // Inform observer that the state changed
+            // inform observer that the state changed
             this.fireUpdate();
-            return false;
+            return true;
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -69,7 +67,7 @@ public class CryptoModel implements CryptoModelObservable{
         try {
             FileInputStream fin = new FileInputStream(file);
             ObjectInputStream oin = new ObjectInputStream(fin);
-            // Read objects
+            // read objects
             crypto = (Crypto) oin.readObject();
             this.fireUpdate();
             return false;
@@ -91,20 +89,20 @@ public class CryptoModel implements CryptoModelObservable{
             switch (eventType) {
                 case SAVE_TEXT:
                     if (crypto.getPlainText() != null) {
-                        out.println(crypto.getPlainText());
+                        out.print(crypto.getPlainText());
                         out.close();
                         return true;
                     }
                     return false;
                 case SAVE_CIPHER:
                     if (crypto.getCipher() != null) {
-                        out.println(crypto.getCipher());
+                        out.print(crypto.getCipher());
                         out.close();
                         return true;
                     }
                     return false;
                 default:
-                    System.out.println("Error occoured during file save");
+                    System.out.println("Error occurred during file save.");
                     return false;
             }
 
@@ -170,7 +168,6 @@ public class CryptoModel implements CryptoModelObservable{
         ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "0", crypto.getPlainText(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
-        System.out.println("External encrypt exit value: " + process.exitValue());
         if (process.exitValue() != 0) {
             crypto.setCipher(null);
             this.fireUpdate();
@@ -202,8 +199,9 @@ public class CryptoModel implements CryptoModelObservable{
      * @param hostName The address of the socket server.
      * @param port The port, where the socket is running on.
      * @throws SocketException
+     * @throws InvalidKeyException
      */
-    public void socketEncrypt(String hostName, int port) throws SocketException {
+    public void socketEncrypt(String hostName, int port) throws SocketException, InvalidKeyException {
         try {
             CryptoSocketClient client = new CryptoSocketClient();
             client.contactServer(hostName, port);
@@ -211,6 +209,8 @@ public class CryptoModel implements CryptoModelObservable{
                 if (cipher != null) {
                     crypto.setCipher(cipher);
                     this.fireUpdate();
+                } else {
+                    throw new InvalidKeyException();
                 }
         } catch (SocketException e) {
             crypto.setCipher(null);
@@ -241,12 +241,31 @@ public class CryptoModel implements CryptoModelObservable{
     }
 
     /**
+     * Encrypts the @plainText value with the @password value using a rest api. For this method to work, the web server,
+     * that hosts the rest api, needs to be running.
+     * @param hostName The address of the web server.
+     * @param hostSlug Slug of the api endpoint.
+     * @param port The port, where the web is running on.
+     * @throws RemoteException
+     */
+    public void apiEncrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
+        try {
+            callCryptoApi(hostName, hostSlug, port, "encrypt");
+        } catch (IOException e) {
+            e.printStackTrace();
+            crypto.setCipher(null);
+            this.fireUpdate();
+            throw new RemoteException();
+        }
+    }
+
+    /**
      * Decrypts the @cipher value with the @password value locally using the CryptoTool class.
      * @return Boolean, true if everything worked fine, false if an exception occurred.
      */
     public boolean localDecrypt() {
+        CryptoTool cryptoTool = new CryptoTool();
         try {
-            CryptoTool cryptoTool = new CryptoTool();
             // decrypt the cipher with the given password and save the plain text in the plainText variable
             byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
             InputStream is = new ByteArrayInputStream(bytes);
@@ -273,7 +292,6 @@ public class CryptoModel implements CryptoModelObservable{
         ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "1", crypto.getCipher(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
-        System.out.println("External decrypt exit value: " + process.exitValue());
         if (process.exitValue() != 0) {
             throw new IOException();
         }
@@ -333,17 +351,82 @@ public class CryptoModel implements CryptoModelObservable{
             CryptoRmiClient client = new CryptoRmiClient(hostName, port);
             crypto = client.decrypt(crypto);
             this.fireUpdate();
-            //return true;
+            // return true;
+        } catch (MalformedURLException | NotBoundException | RemoteException e) {
+            crypto.setPlainText(null);
+            this.fireUpdate();
+            throw new RemoteException();
         } catch (InvalidKeyException e) {
             crypto.setPlainText(null);
             this.fireUpdate();
             throw new InvalidKeyException(e);
-        } catch (MalformedURLException | NotBoundException | RemoteException e) {
+        }
+    }
+
+    /**
+     * Decrypts the @cipher value with the @password value using a rest api endpoint. For this method to work the web server
+     * hosting the api needs to be running.
+     * @param hostName The address of the web server.
+     * @param hostSlug Slug of the api endpoint.
+     * @param port The port, where the web server is running on.
+     * @throws RemoteException
+     * @throws InvalidKeyException
+     */
+    public void apiDecrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
+        try {
+            callCryptoApi(hostName, hostSlug, port, "decrypt");
+        } catch (IOException e) {
+            e.printStackTrace();
             crypto.setPlainText(null);
             this.fireUpdate();
             throw new RemoteException();
         }
     }
+
+    private void callCryptoApi(String hostName, String hostSlug, int port, String method) throws RemoteException, InvalidKeyException {
+        Gson gson = new Gson();
+        try {
+            String urlSpec = "http://" + hostName + ":" + port + "/" + hostSlug;
+            URL url = new URL(urlSpec);
+            HttpURLConnection httpConnection = (HttpURLConnection) url.openConnection();
+            httpConnection.setDoOutput(true);
+            httpConnection.setRequestMethod("POST");
+
+            JsonObject jsonObject = new JsonObject();
+            String contentJson = gson.toJson(crypto);
+            jsonObject.addProperty("method", method);
+            jsonObject.addProperty("content", contentJson);
+            String requestMessage = gson.toJson(jsonObject);
+            PrintWriter out = new PrintWriter(httpConnection.getOutputStream());
+            out.println(requestMessage);
+            out.close();
+
+            int responseCode = httpConnection.getResponseCode();
+            BufferedReader bufferedReader;
+
+            if (responseCode > 199 && responseCode < 300) {
+                bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
+            } else {
+                bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getErrorStream()));
+            }
+            String responseString = bufferedReader.readLine();
+            JsonObject responseObj = gson.fromJson(responseString, com.google.gson.JsonObject.class);
+            String result = responseObj.get("content").getAsString();
+            crypto = gson.fromJson(result, Crypto.class);
+            if (responseObj.get("error") != null) {
+                // if the server sends an error message, it means that the server couldn't fulfill the request
+                String error = responseObj.get("error").getAsString();
+                System.out.println("error: " + error);
+                throw new InvalidKeyException();
+            }
+            this.fireUpdate();
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RemoteException();
+        }
+    }
+
+
 
     public void resetCryptoObject() {
         crypto = new Crypto();

@@ -105,7 +105,6 @@ public class CryptoSocketWorker extends Thread {
             CryptoTool cryptoTool = new CryptoTool();
             ByteArrayOutputStream outByte = new ByteArrayOutputStream();
             boolean successfulEncrypt = cryptoTool.encrypt(outByte, plainText.toString().getBytes(), password.toString());
-            System.out.println(successfulEncrypt);
             if (successfulEncrypt) {
                 String s = Base64.getEncoder().encodeToString(outByte.toByteArray());
                 sendMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());

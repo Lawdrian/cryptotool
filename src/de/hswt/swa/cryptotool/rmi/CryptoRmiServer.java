@@ -28,29 +28,23 @@ public class CryptoRmiServer extends UnicastRemoteObject implements CryptoRmiSer
      * @return Crypto object
      * @throws RemoteException
      */
-    public Crypto encrypt(Crypto crypto) throws RemoteException {
-        try {
-            System.out.println("Encrypt started");
-            CryptoTool cryptoTool = new CryptoTool();
-            ByteArrayOutputStream out = new ByteArrayOutputStream();
-            // encrypt the plain text with the password and save the encrypted text in the cipher variable
-            boolean successfulEncrypt = cryptoTool.encrypt(out, crypto.getPlainText().getBytes(), crypto.getPassword());
-            if (successfulEncrypt) {
-                String s = Base64.getEncoder().encodeToString(out.toByteArray());
-                crypto.setCipher(s);
-                return crypto;
-            } else {
-                throw new Exception("Plain text couldn't be encrypted!");
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            crypto.setCipher(null);
+    public Crypto encrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
+        CryptoTool cryptoTool = new CryptoTool();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        // encrypt the plain text with the password and save the encrypted text in the cipher variable
+        boolean successfulEncrypt = cryptoTool.encrypt(out, crypto.getPlainText().getBytes(), crypto.getPassword());
+        if (successfulEncrypt) {
+            String s = Base64.getEncoder().encodeToString(out.toByteArray());
+            crypto.setCipher(s);
             return crypto;
+        } else {
+            throw new InvalidKeyException();
         }
     }
 
     /**
-     * Decrypts the cipher variable of a Crypto object with the password set in the crypto object. It saves the output in the plainText variable of the object and returns it.
+     * Decrypts the cipher variable of a Crypto object with the password set in the crypto object.
+     * It saves the output in the plainText variable of the object and returns it.
      * @param crypto Crypto object
      * @return Crypto object
      * @throws RemoteException
@@ -59,15 +53,21 @@ public class CryptoRmiServer extends UnicastRemoteObject implements CryptoRmiSer
     public Crypto decrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
         CryptoTool cryptoTool = new CryptoTool();
         // decrypt the cipher with the given password and save the plain text in the plainText variable
-        byte[] bytes = Base64.getDecoder().decode(crypto.getCipher());
-        InputStream is = new ByteArrayInputStream(bytes);
-        byte[] plainText = cryptoTool.decrypt(is, crypto.getPassword());
-        if (plainText != null) {
-            crypto.setPlainText(new String(plainText));
-        } else {
-            throw new InvalidKeyException();
+        byte[] bytes;
+        try {
+            bytes = Base64.getDecoder().decode(crypto.getCipher());
+            InputStream is = new ByteArrayInputStream(bytes);
+            byte[] plainText = cryptoTool.decrypt(is, crypto.getPassword());
+            if (plainText != null) {
+                crypto.setPlainText(new String(plainText));
+            } else {
+                throw new InvalidKeyException();
+            }
+            return crypto;
+        } catch (Exception e) {
+            throw new InvalidKeyException(e);
         }
-        return crypto;
+
     }
 
     /**

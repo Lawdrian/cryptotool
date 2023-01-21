@@ -19,7 +19,6 @@ public class TomcatServer {
 
         String contextPath = "";
         String docBase = new File("").getAbsolutePath();
-        System.out.println(docBase);
         Context context = tomcat.addContext(contextPath, docBase);
         String servletName = "Servlet1";
         String urlPattern = "/go";
