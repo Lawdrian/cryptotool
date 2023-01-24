@@ -1,6 +1,7 @@
 package de.hswt.swa.cryptotool.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import de.hswt.swa.cryptotool.data.Crypto;
 
@@ -34,7 +35,7 @@ public class CryptoApiClient {
      * @throws InvalidKeyException Wrong password.
      */
     public static Crypto callCryptoApi(String hostName, String hostSlug, int port, String method, Crypto crypto) throws RemoteException, InvalidKeyException {
-        Gson gson = new Gson();
+        Gson gson = new GsonBuilder().setDateFormat("MMM dd, yyyy HH:mm:ss").create();
         try {
             String urlSpec = "http://" + hostName + ":" + port + "/" + hostSlug;
             URL url = new URL(urlSpec);

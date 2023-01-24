@@ -218,7 +218,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         String imagePath = Paths.get("assets/Favicon.png")
                 .toAbsolutePath()
                 .toString();
-        stage.getIcons().add(new Image(imagePath));
+        stage.getIcons().add(new Image("file:" + imagePath));
         stage.show();
 
         controller.registerCryptoModelObserver(this);

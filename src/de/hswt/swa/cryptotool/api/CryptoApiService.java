@@ -1,6 +1,7 @@
 package de.hswt.swa.cryptotool.api;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import de.hswt.swa.cryptotool.data.Crypto;
 import de.hswt.swa.cryptotool.utils.CryptoTool;
@@ -34,7 +35,7 @@ public class CryptoApiService extends HttpServlet {
             Scanner scanner = new Scanner(request.getInputStream());
             String json = scanner.nextLine();
 
-            Gson gson = new Gson();
+            Gson gson = new GsonBuilder().setDateFormat("MMM dd, yyyy HH:mm:ss").create();
             JsonObject requestObj = gson.fromJson(json, com.google.gson.JsonObject.class);
             JsonObject responseObj = new JsonObject();
             String content = requestObj.get("content").getAsString();
