@@ -1,7 +1,7 @@
 package de.hswt.swa.cryptotool.rmi;
 
 import de.hswt.swa.cryptotool.data.Crypto;
-import de.hswt.swa.cryptotool.tools.CryptoTool;
+import de.hswt.swa.cryptotool.utils.CryptoTool;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,9 +26,10 @@ public class CryptoRmiServer extends UnicastRemoteObject implements CryptoRmiSer
      * Encrypts the plainText variable of a Crypto object with the password set in the crypto object. It saves the output in the cipher variable of the object and returns it.
      * @param crypto Crypto object
      * @return Crypto object
-     * @throws RemoteException
+     * @throws RemoteException Server unreachable.
+     * @throws InvalidKeyException Illegal password.
      */
-    public Crypto encrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
+    public synchronized Crypto encrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
         CryptoTool cryptoTool = new CryptoTool();
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         // encrypt the plain text with the password and save the encrypted text in the cipher variable
@@ -47,10 +48,10 @@ public class CryptoRmiServer extends UnicastRemoteObject implements CryptoRmiSer
      * It saves the output in the plainText variable of the object and returns it.
      * @param crypto Crypto object
      * @return Crypto object
-     * @throws RemoteException
-     * @throws InvalidKeyException
+     * @throws RemoteException Server unreachable.
+     * @throws InvalidKeyException Invalid password.
      */
-    public Crypto decrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
+    public synchronized Crypto decrypt(Crypto crypto) throws RemoteException, InvalidKeyException {
         CryptoTool cryptoTool = new CryptoTool();
         // decrypt the cipher with the given password and save the plain text in the plainText variable
         byte[] bytes;
@@ -76,9 +77,14 @@ public class CryptoRmiServer extends UnicastRemoteObject implements CryptoRmiSer
      */
     public static void main(String[] args) {
         try {
-
+            String hostName = "localhost";
+            if (args.length > 0) {
+                hostName = args[0];
+            }
             // create the broker
             try {
+                // if the rmi server is being run on another host, then the hostname needs to be changed
+                System.setProperty("java.rmi.server.hostname",hostName);
                 LocateRegistry.createRegistry(3009);
             } catch (RemoteException rexp) {
                 rexp.printStackTrace();

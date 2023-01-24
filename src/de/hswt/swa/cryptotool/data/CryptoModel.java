@@ -1,10 +1,9 @@
 package de.hswt.swa.cryptotool.data;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 import de.hswt.swa.cryptotool.rmi.CryptoRmiClient;
 import de.hswt.swa.cryptotool.socket.CryptoSocketClient;
-import de.hswt.swa.cryptotool.tools.CryptoTool;
+import de.hswt.swa.cryptotool.utils.CryptoTool;
+import de.hswt.swa.cryptotool.utils.EventType;
 
 import java.io.*;
 import java.net.*;
@@ -24,7 +23,7 @@ import static de.hswt.swa.cryptotool.api.CryptoApiClient.callCryptoApi;
 public class CryptoModel implements CryptoModelObservable{
 
     private Crypto crypto = new Crypto();
-    private final Collection<CryptoModelObserver> observers = new ArrayList<CryptoModelObserver>();
+    private final Collection<CryptoModelObserver> observers = new ArrayList<>();
 
     /**
      * Reads the content of a text file and depending on the @eventType value saves it either in
@@ -145,15 +144,16 @@ public class CryptoModel implements CryptoModelObservable{
             boolean successfulEncrypt = cryptoTool.encrypt(out, crypto.getPlainText().getBytes(), crypto.getPassword());
             if (successfulEncrypt) {
                 String s = Base64.getEncoder().encodeToString(out.toByteArray());
+                crypto.setDate(new Date());
                 crypto.setCipher(s);
             } else {
-                crypto.setCipher(null);
+                resetCipher();
             }
             this.fireUpdate();
             return successfulEncrypt;
         } catch (Exception e) {
             e.printStackTrace();
-            crypto.setCipher(null);
+            resetCipher();
             this.fireUpdate();
             return false;
         }
@@ -163,24 +163,26 @@ public class CryptoModel implements CryptoModelObservable{
      * Encrypts the @plainText value with the @password value using an external Java program (.jar).
      * @param cmd The name of the external Java program.
      * @param dir The directory where the program is located.
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws IOException Invalid password.
+     * @throws InterruptedException External program couldn't be successfully executed.
      */
     public void externalEncrypt(String cmd, String dir) throws IOException, InterruptedException {
-        ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "0", crypto.getPlainText(),crypto.getPassword());
+        ProcessBuilder builder = new ProcessBuilder("java", "-Dfile.encoding=utf-8", "-jar", dir + cmd, "0", crypto.getPlainText(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
         if (process.exitValue() != 0) {
-            crypto.setCipher(null);
+            resetCipher();
             this.fireUpdate();
             throw new IOException();
         }
-        BufferedReader instream = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        InputStreamReader inReader = new InputStreamReader(process.getInputStream());
+        System.out.println(inReader.getEncoding());
+        BufferedReader instream = new BufferedReader(inReader);
         StringBuilder cipher = new StringBuilder();
         String seperator = "";
         String line = instream.readLine();
-        if (line == null) {
-            crypto.setCipher(null);
+        if (line == null || line.equals("")) {
+            resetCipher();
             this.fireUpdate();
             throw new IOException();
         }
@@ -191,6 +193,7 @@ public class CryptoModel implements CryptoModelObservable{
             line = instream.readLine();
         }
         instream.close();
+        crypto.setDate(new Date());
         crypto.setCipher(cipher.toString());
         this.fireUpdate();
     }
@@ -200,22 +203,23 @@ public class CryptoModel implements CryptoModelObservable{
      * needs to be running.
      * @param hostName The address of the socket server.
      * @param port The port, where the socket is running on.
-     * @throws SocketException
-     * @throws InvalidKeyException
+     * @throws SocketException Socket server is not reachable.
+     * @throws InvalidKeyException Illegal password.
      */
     public void socketEncrypt(String hostName, int port) throws SocketException, InvalidKeyException {
         try {
             CryptoSocketClient client = new CryptoSocketClient();
             client.contactServer(hostName, port);
             String cipher = client.encrypt(crypto.getPlainText(), crypto.getPassword());
-                if (cipher != null) {
-                    crypto.setCipher(cipher);
-                    this.fireUpdate();
-                } else {
-                    throw new InvalidKeyException();
-                }
+            crypto.setCipher(cipher);
+            this.fireUpdate();
+            if (cipher == null) {
+                throw new InvalidKeyException();
+            }
+            crypto.setDate(new Date());
+            this.fireUpdate();
         } catch (SocketException e) {
-            crypto.setCipher(null);
+            resetCipher();
             this.fireUpdate();
             throw new SocketException();
         }
@@ -226,19 +230,23 @@ public class CryptoModel implements CryptoModelObservable{
      * needs to be running.
      * @param hostName The address of the rmi server.
      * @param port The port, where the rmi is running on.
-     * @throws RemoteException
+     * @throws RemoteException RMI server is not reachable.
+     * @throws InvalidKeyException Illegal password.
      */
-    public void rmiEncrypt(String hostName, int port) throws RemoteException {
+    public void rmiEncrypt(String hostName, int port) throws RemoteException, InvalidKeyException {
         try {
             CryptoRmiClient client = new CryptoRmiClient(hostName, port);
-            System.out.println(crypto.getCipher());
             crypto = client.encrypt(crypto);
-            System.out.println(crypto.getCipher());
+            crypto.setDate(new Date());
             this.fireUpdate();
-        } catch (Exception e) {
-            crypto.setCipher(null);
+        } catch (RemoteException | MalformedURLException | NotBoundException e) {
+            resetCipher();
             this.fireUpdate();
             throw new RemoteException();
+        } catch (InvalidKeyException e) {
+            resetCipher();
+            this.fireUpdate();
+            throw new InvalidKeyException(e);
         }
     }
 
@@ -248,15 +256,17 @@ public class CryptoModel implements CryptoModelObservable{
      * @param hostName The address of the web server.
      * @param hostSlug Slug of the api endpoint.
      * @param port The port, where the web is running on.
-     * @throws RemoteException
+     * @throws RemoteException Web server is not reachable.
+     * @throws InvalidKeyException Illegal password.
      */
     public void apiEncrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
         try {
             crypto = callCryptoApi(hostName, hostSlug, port, "encrypt", crypto);
+            crypto.setDate(new Date());
             this.fireUpdate();
         } catch (IOException e) {
             e.printStackTrace();
-            crypto.setCipher(null);
+            resetCipher();
             this.fireUpdate();
             throw new RemoteException();
         }
@@ -288,16 +298,18 @@ public class CryptoModel implements CryptoModelObservable{
      * Decrypts the @cipher value with the @password value using an external Java program (.jar).
      * @param cmd The name of the external Java program.
      * @param dir The directory where the program is located.
-     * @throws IOException
-     * @throws InterruptedException
+     * @throws IOException False password.
+     * @throws InterruptedException External program couldn't be successfully executed.
      */
     public void externalDecrypt(String cmd, String dir) throws IOException, InterruptedException {
-        ProcessBuilder builder = new ProcessBuilder("java", "-jar", dir + cmd, "1", crypto.getCipher(),crypto.getPassword());
+        ProcessBuilder builder = new ProcessBuilder("java", "-Dfile.encoding=utf-8", "-jar", dir + cmd, "1", crypto.getCipher(),crypto.getPassword());
         Process process = builder.start();
         process.waitFor();
         if (process.exitValue() != 0) {
             throw new IOException();
         }
+        InputStreamReader inReader = new InputStreamReader(process.getInputStream());
+        System.out.println(inReader.getEncoding());
         BufferedReader instream = new BufferedReader(new InputStreamReader(process.getInputStream()));
         StringBuilder plainText = new StringBuilder();
         String seperator = "";
@@ -323,8 +335,8 @@ public class CryptoModel implements CryptoModelObservable{
      * needs to be running.
      * @param hostName The address of the socket server.
      * @param port The port, where the socket is running on.
-     * @throws SocketException
-     * @throws InvalidKeyException
+     * @throws SocketException Socket server is not reachable.
+     * @throws InvalidKeyException False password.
      */
     public void socketDecrypt(String hostName, int port) throws SocketException, InvalidKeyException {
             CryptoSocketClient client = new CryptoSocketClient();
@@ -346,7 +358,8 @@ public class CryptoModel implements CryptoModelObservable{
      * needs to be running.
      * @param hostName The address of the rmi server.
      * @param port The port, where the rmi is running on.
-     * @throws RemoteException
+     * @throws RemoteException RMI server is not reachable.
+     * @throws InvalidKeyException False password.
      */
     public void rmiDecrypt(String hostName, int port) throws RemoteException, InvalidKeyException {
         try {
@@ -372,8 +385,8 @@ public class CryptoModel implements CryptoModelObservable{
      * @param hostName The address of the web server.
      * @param hostSlug Slug of the api endpoint.
      * @param port The port, where the web server is running on.
-     * @throws RemoteException
-     * @throws InvalidKeyException
+     * @throws RemoteException Web server is not reachable.
+     * @throws InvalidKeyException False password.
      */
     public void apiDecrypt(String hostName, String hostSlug, int port) throws RemoteException, InvalidKeyException {
         try {
@@ -390,6 +403,10 @@ public class CryptoModel implements CryptoModelObservable{
     public void resetCryptoObject() {
         crypto = new Crypto();
         this.fireUpdate();
+    }
+
+    public Date getEncryptionDate() {
+        return crypto.getDate();
     }
 
     public boolean isPlainTextSet() {
@@ -425,6 +442,11 @@ public class CryptoModel implements CryptoModelObservable{
             obs.update(crypto);
         }
 
+    }
+
+    private void resetCipher() {
+        crypto.setDate(null);
+        crypto.setCipher(null);
     }
 
 

@@ -1,10 +1,8 @@
 package de.hswt.swa.cryptotool.website;
 
-import de.hswt.swa.cryptotool.socket.ConnectionState;
-import de.hswt.swa.cryptotool.tools.CryptoTool;
+import de.hswt.swa.cryptotool.utils.CryptoTool;
 
 import javax.servlet.RequestDispatcher;
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,8 +13,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Base64;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public class CryptoServlet  extends HttpServlet {
 
+    /**
+     * This method gets called when a user enters the URL of the endpoint in the browser.
+     * It renders an empty Crypto.jsp page
+     *
+     * @param request Request object
+     * @param response Response object,
+     * @throws ServletException Servlet error.
+     * @throws IOException Error.
+     */
     @Override
     public void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("doGet called");
@@ -30,6 +41,16 @@ public class CryptoServlet  extends HttpServlet {
         dispatcher.forward(request, response);
     }
 
+    /**
+     * This method gets called when the Crypto.jsp sends a POST request to the URL of this endpoint.
+     * Depending on the method it encrypts or decrypts the sent input text.
+     * It then renders the Crypto.jsp with the output set.
+     *
+     * @param request Request object
+     * @param response Response object,
+     * @throws ServletException Servlet error.
+     * @throws IOException Invalid password.
+     */
     @Override
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         System.out.println("doPost called");

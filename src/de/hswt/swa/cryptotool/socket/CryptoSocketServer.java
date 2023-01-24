@@ -7,8 +7,7 @@ import java.net.Socket;
 /**
  * @author AdrianWild
  * @version 1.0
- * */
-
+ */
 public class CryptoSocketServer {
 
     private ServerSocket server;

@@ -1,6 +1,6 @@
 package de.hswt.swa.cryptotool.socket;
 
-import de.hswt.swa.cryptotool.tools.CryptoTool;
+import de.hswt.swa.cryptotool.utils.CryptoTool;
 
 import java.io.*;
 import java.net.Socket;
@@ -50,12 +50,12 @@ public class CryptoSocketWorker extends Thread {
                 try {
                     state = ConnectionState.valueOf(messageFromClient);
                     switch (state) {
-                        case CLIENT_ENCODE_REQUEST:
-                            sendMessage(ConnectionState.SERVER_ENCODE_ACCEPT.name());
+                        case CLIENT_ENCRYPT_REQUEST:
+                            sendMessage(ConnectionState.SERVER_ENCRYPT_ACCEPT.name());
                             handleEncryptRequest();
                             break;
-                        case CLIENT_DECODE_REQUEST:
-                            sendMessage(ConnectionState.SERVER_DECODE_ACCEPT.name());
+                        case CLIENT_DECRYPT_REQUEST:
+                            sendMessage(ConnectionState.SERVER_DECRYPT_ACCEPT.name());
                             handleDecryptRequest();
                             break;
                         case CLIENT_CONNECTION_CLOSE:
@@ -109,7 +109,7 @@ public class CryptoSocketWorker extends Thread {
             boolean successfulEncrypt = cryptoTool.encrypt(outByte, plainText.toString().getBytes(), password.toString());
             if (successfulEncrypt) {
                 String s = Base64.getEncoder().encodeToString(outByte.toByteArray());
-                sendMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
+                sendMessage(ConnectionState.SERVER_ENCRYPT_SUCCESS.name());
                 sendMessage(s);
                 client.close();
                 outByte.close();
@@ -156,7 +156,7 @@ public class CryptoSocketWorker extends Thread {
                 byte[] plainText = cryptoTool.decrypt(is, password.toString());
                 is.close();
                 if (plainText != null) {
-                    sendMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
+                    sendMessage(ConnectionState.SERVER_DECRYPT_SUCCESS.name());
                     sendMessage(new String(plainText));
                     sendMessage(ConnectionState.SERVER_PLAIN_TEXT_DONE.name());
                 } else {
@@ -183,7 +183,7 @@ public class CryptoSocketWorker extends Thread {
     /**
      * This method is a helper method that reads the password from the client.
      * @return StringBuilder password.
-     * @throws IOException
+     * @throws IOException Error occurred when reading line.
      */
     private StringBuilder readPassword() throws IOException {
         String seperator;
@@ -204,13 +204,13 @@ public class CryptoSocketWorker extends Thread {
     }
 
     private void handleEncryptFailure() throws IOException {
-        sendMessage(ConnectionState.SERVER_ENCODE_FAILURE.name());
+        sendMessage(ConnectionState.SERVER_ENCRYPT_FAILURE.name());
         sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
         this.client.close();
     }
 
     private void handleDecryptFailure() throws IOException {
-        sendMessage(ConnectionState.SERVER_DECODE_FAILURE.name());
+        sendMessage(ConnectionState.SERVER_DECRYPT_FAILURE.name());
         sendMessage(ConnectionState.SERVER_CONNECTION_CLOSE.name());
         this.client.close();
     }

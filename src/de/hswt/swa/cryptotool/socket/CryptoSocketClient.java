@@ -45,7 +45,7 @@ public class CryptoSocketClient {
      * Initiates a connection with a socket server using a defined protocol.
      * @param hostName name of the socket server.
      * @param port port that the socket server is running on.
-     * @throws SocketException
+     * @throws SocketException Socket error.
      */
     public void contactServer(String hostName, int port) throws SocketException {
         try {
@@ -74,9 +74,9 @@ public class CryptoSocketClient {
      */
     public String encrypt(String plainText, String password) {
         try {
-            sendMessage(ConnectionState.CLIENT_ENCODE_REQUEST.name());
+            sendMessage(ConnectionState.CLIENT_ENCRYPT_REQUEST.name());
             readMessageFromServer();
-            if (messageFromServer.equals(ConnectionState.SERVER_ENCODE_ACCEPT.name())) {
+            if (messageFromServer.equals(ConnectionState.SERVER_ENCRYPT_ACCEPT.name())) {
                 // send the plain text
                 waitForMessage(ConnectionState.SERVER_PLAIN_TEXT_REQUEST.name());
                 sendMessage(plainText);
@@ -86,7 +86,7 @@ public class CryptoSocketClient {
                 sendMessage(password);
                 sendMessage(ConnectionState.CLIENT_PASSWORD_DONE.name());
 
-                waitForMessage(ConnectionState.SERVER_ENCODE_SUCCESS.name());
+                waitForMessage(ConnectionState.SERVER_ENCRYPT_SUCCESS.name());
                 readMessageFromServer(); // cipher
                 sendMessage(ConnectionState.CLIENT_CONNECTION_CLOSE.name());
                 return messageFromServer;
@@ -109,9 +109,9 @@ public class CryptoSocketClient {
      */
     public String decrypt(String cipher, String password) {
         try {
-            sendMessage(ConnectionState.CLIENT_DECODE_REQUEST.name());
+            sendMessage(ConnectionState.CLIENT_DECRYPT_REQUEST.name());
             readMessageFromServer();
-            if (messageFromServer.equals(ConnectionState.SERVER_DECODE_ACCEPT.name())) {
+            if (messageFromServer.equals(ConnectionState.SERVER_DECRYPT_ACCEPT.name())) {
                 // send the cipher
                 waitForMessage(ConnectionState.SERVER_CIPHER_REQUEST.name());
                 sendMessage(cipher);
@@ -121,7 +121,7 @@ public class CryptoSocketClient {
                 sendMessage(password);
                 sendMessage(ConnectionState.CLIENT_PASSWORD_DONE.name());
 
-                waitForMessage(ConnectionState.SERVER_DECODE_SUCCESS.name());
+                waitForMessage(ConnectionState.SERVER_DECRYPT_SUCCESS.name());
                 readMessageFromServer(); // plain text
                 StringBuilder plainText = new StringBuilder();
                 String seperator = "";

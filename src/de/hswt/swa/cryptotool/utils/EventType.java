@@ -1,6 +1,8 @@
-package de.hswt.swa.cryptotool.data;
+package de.hswt.swa.cryptotool.utils;
 
 /**
+ * @author AdrianWild
+ * @version 1.0
  * Enum used for determining what gui action should trigger what method.
  */
 public enum EventType {
@@ -20,5 +22,6 @@ public enum EventType {
         API_DECRYPT,
         IMPORT_CRYPTO,
         SAVE_CRYPTO,
+        DISPLAY_DATE,
         RESET_FIELDS
 }

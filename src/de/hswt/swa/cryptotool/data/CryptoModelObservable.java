@@ -1,11 +1,15 @@
 package de.hswt.swa.cryptotool.data;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public interface CryptoModelObservable {
 
-    public void registerObserver(CryptoModelObserver observer);
+    void registerObserver(CryptoModelObserver observer);
 
-    public void unRegisterObserver(CryptoModelObserver observer);
+    void unRegisterObserver(CryptoModelObserver observer);
 
-    public void fireUpdate();
+    void fireUpdate();
 
 }

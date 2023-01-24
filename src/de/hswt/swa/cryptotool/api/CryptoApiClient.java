@@ -13,8 +13,26 @@ import java.net.URL;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public class CryptoApiClient {
 
+    /**
+     * This method calls a REST API endpoint with a POST request to either encrypt or decrypt the content of a crypto
+     * object. It first transforms the object into a JSON string and then sends it to the endpoint with the method type.
+     * If everything worked fine, then it receives the updated object as JSON string from the endpoint. It then returns
+     * the transformed crypto object.
+     * @param hostName Hostname of the endpoint.
+     * @param hostSlug URL Slug of the endpoint.
+     * @param  port Port of the endpoint.
+     * @param  method If encrypt -> send encrypt request, else if decrypt -> send decrypt request.
+     * @param  crypto Crypto object, that should be either encrypted or decrypted.
+     * @return Updated crypto object.
+     * @throws RemoteException Endpoint not reachable.
+     * @throws InvalidKeyException Wrong password.
+     */
     public static Crypto callCryptoApi(String hostName, String hostSlug, int port, String method, Crypto crypto) throws RemoteException, InvalidKeyException {
         Gson gson = new Gson();
         try {
@@ -36,12 +54,15 @@ public class CryptoApiClient {
             int responseCode = httpConnection.getResponseCode();
             BufferedReader bufferedReader;
 
+            // check the response code
             if (responseCode > 199 && responseCode < 300) {
                 bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getInputStream()));
             } else {
                 bufferedReader = new BufferedReader(new InputStreamReader(httpConnection.getErrorStream()));
             }
             String responseString = bufferedReader.readLine();
+            System.out.println(requestMessage);
+            System.out.println(responseString);
             JsonObject responseObj = gson.fromJson(responseString, com.google.gson.JsonObject.class);
             String result = responseObj.get("content").getAsString();
             crypto = gson.fromJson(result, Crypto.class);

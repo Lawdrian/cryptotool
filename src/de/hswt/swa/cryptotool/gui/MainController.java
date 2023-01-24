@@ -1,20 +1,24 @@
 package de.hswt.swa.cryptotool.gui;
 
+import de.hswt.swa.cryptotool.data.CryptoModel;
 import de.hswt.swa.cryptotool.data.CryptoModelObserver;
-import de.hswt.swa.cryptotool.data.EventType;
-import de.hswt.swa.cryptotool.logic.BusinessLogic;
+import de.hswt.swa.cryptotool.utils.EventType;
+
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.stage.FileChooser;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.SocketException;
 import java.rmi.RemoteException;
 import java.security.InvalidKeyException;
 import java.util.Optional;
+import java.util.Properties;
 
-import static de.hswt.swa.cryptotool.data.EventType.*;
+import static de.hswt.swa.cryptotool.utils.EventType.*;
 
 /**
  * @author AdrianWild
@@ -23,10 +27,21 @@ import static de.hswt.swa.cryptotool.data.EventType.*;
 public class MainController {
 
     private final MainFrame view;
-    private final BusinessLogic logic = new BusinessLogic();
+    private final Properties properties;
+    private final CryptoModel model = new CryptoModel();
 
     public MainController(MainFrame mainFrame) {
+
         view = mainFrame;
+
+        properties = new Properties();
+        try {
+            String propertyFileName = "crypto.properties";
+            BufferedInputStream stream = new BufferedInputStream(new FileInputStream(propertyFileName));
+            properties.load(stream);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**
@@ -42,6 +57,8 @@ public class MainController {
                 return new ImportFileHandler(eventType);
             case RESET_FIELDS:
                 return new ResetFieldsHandler();
+            case DISPLAY_DATE:
+                return new DisplayDateHandler();
             case SAVE_TEXT:
             case SAVE_CIPHER:
             case SAVE_CRYPTO:
@@ -87,20 +104,21 @@ public class MainController {
                 extension = "*.txt";
             }
             // open a file chooser
-            File file = view.openFileChooser("Open File", new FileChooser.ExtensionFilter(extension, extension), new File("."), true);
+            File file = view.openFileChooser("Open File", new FileChooser.ExtensionFilter(extension, extension),
+                    new File("."), true);
             // call application logic to open the respective file
             if (file != null) {
                 switch (eventType) {
                     case IMPORT_TEXT:
                     case IMPORT_CIPHER:
-                        if (logic.readTextFile(file, eventType)) {
+                        if (model.readTextFile(file.getAbsolutePath(), eventType)) {
                             view.addStatus("File " + file.getName() + " imported successfully.");
                         } else {
                             view.addStatus("File " + file.getName() + " couldn't be imported.");
                         }
                         break;
                     case IMPORT_CRYPTO:
-                        if (logic.readCryptoFile(file)) {
+                        if (model.readCryptoFile(file)) {
                             view.addStatus("File " + file.getName() + " imported successfully.");
                         } else {
                             view.addStatus("File " + file.getName() + " couldn't be imported.");
@@ -137,12 +155,13 @@ public class MainController {
                 extension = "*.txt";
             }
             // open a file chooser
-            File file = view.openFileChooser("Save file", new FileChooser.ExtensionFilter(extension, extension), new File("."), false);
+            File file = view.openFileChooser("Save file", new FileChooser.ExtensionFilter(extension, extension),
+                    new File("."), false);
             if (file != null) {
                 switch (eventType) {
                     case SAVE_TEXT:
                     case SAVE_CIPHER:
-                        if (logic.saveAsTextFile(file, eventType)) {
+                        if (model.saveAsTextFile(file.getAbsolutePath(), eventType)) {
                             view.addStatus("Save was successful.");
                         }
                         else {
@@ -151,7 +170,7 @@ public class MainController {
                         }
                         break;
                     case SAVE_CRYPTO:
-                        if (logic.saveAsCryptoFile(file)) {
+                        if (model.saveAsCryptoFile(file)) {
                             view.addStatus("Saving the crypto object was successful.");
                         }
                  }
@@ -183,31 +202,32 @@ public class MainController {
          */
         public void handle(ActionEvent event) {
             // check if plain text field is set
-            if (!logic.isPlainTextSet()) {
+            if (!model.isPlainTextSet()) {
                 // make the user import plain text before encoding
                 ImportFileHandler fileImporter = new ImportFileHandler(IMPORT_TEXT);
                 fileImporter.handle(event);
             }
-            if (logic.isPlainTextSet()) {
+            if (model.isPlainTextSet()) {
                 Optional<String> result = view.openPasswordDialog(0);
                 result.ifPresent(password -> {
-                    logic.setPassword(password);
-                    if (logic.isPasswordSet()) {
+                    model.setPassword(password);
+                    if (model.isPasswordSet()) {
                         switch (eventType) {
                             case LOCAL_ENCRYPT:
-                                if (logic.localEncrypt()) {
+                                if (model.localEncrypt()) {
                                     view.addStatus("Text has been successfully encrypted locally.");
                                 } else {
-                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                    addStatusAndAlert("Umlauts are not allowed in a password.");
                                 }
                                 break;
                             case EXTERNAL_ENCRYPT:
                                 try {
-                                    logic.externalEncrypt();
+                                    model.externalEncrypt(properties.getProperty("externalName"),
+                                            properties.getProperty("externalDir"));
                                     view.addStatus("Text has been successfully encrypted locally.");
                                 } catch (IOException e){
                                     e.printStackTrace();
-                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                    addStatusAndAlert("Umlauts are not allowed in a password.");
                                 } catch (InterruptedException e) {
                                     e.printStackTrace();
                                     addStatusAndAlert("Text couldn't be encrypted with external program.");
@@ -215,33 +235,42 @@ public class MainController {
                                 break;
                             case SOCKET_ENCRYPT:
                                 try {
-                                    logic.socketEncrypt();
+                                    model.socketEncrypt(properties.getProperty("socketHostName"),
+                                            Integer.parseInt(properties.getProperty("socketPort")));
                                     view.addStatus("Text has been successfully encrypted with socket.");
                                 } catch (SocketException e) {
                                     e.printStackTrace();
                                     addStatusAndAlert("Connection to socket server failed.");
                                 } catch (InvalidKeyException e) {
-                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                    e.printStackTrace();
+                                    addStatusAndAlert("Umlauts are not allowed in a password.");
                                 }
                                 break;
                             case RMI_ENCRYPT:
                                 try {
-                                    logic.rmiEncrypt();
+                                    model.rmiEncrypt(properties.getProperty("rmiHostName"),
+                                            Integer.parseInt(properties.getProperty("rmiPort")));
                                     view.addStatus("Text has been successfully encrypted with rmi.");
                                 } catch (RemoteException e) {
+                                    e.printStackTrace();
                                     addStatusAndAlert("Connection to rmi server failed.");
                                 } catch (InvalidKeyException e) {
-                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                    e.printStackTrace();
+                                    addStatusAndAlert("Umlauts are not allowed in a password.");
                                 }
                                 break;
                             case API_ENCRYPT:
                                 try {
-                                    logic.apiEncrypt();
+                                    model.apiEncrypt(properties.getProperty("apiHostName"),
+                                            properties.getProperty("apiSlug"),
+                                            Integer.parseInt(properties.getProperty("apiPort")));
                                     view.addStatus("Text has been successfully encrypted with rest api.");
                                 } catch (RemoteException e) {
+                                    e.printStackTrace();
                                     addStatusAndAlert("Connection to web server server failed.");
                                 } catch (InvalidKeyException e) {
-                                    addStatusAndAlert("Mutated vowels are not allowed in a password.");
+                                    e.printStackTrace();
+                                    addStatusAndAlert("Umlauts are not allowed in a password.");
                                 }
                                 break;
                             default:
@@ -275,20 +304,20 @@ public class MainController {
         public void handle(ActionEvent event) {
             System.out.println("DecryptHandler");
             // check if cipher field is set
-            if (!logic.isCipherSet()) {
+            if (!model.isCipherSet()) {
                 // make the user import plain text before encoding
                 ImportFileHandler fileImporter = new ImportFileHandler(IMPORT_CIPHER);
                 fileImporter.handle(event);
             }
-            if (logic.isCipherSet()) {
+            if (model.isCipherSet()) {
                 // create dialog component where the user can type in a password and start the encoding.
                 Optional<String> result = view.openPasswordDialog(1);
                 result.ifPresent(password -> {
-                    logic.setPassword(password);
-                    if (logic.isPasswordSet()) {
+                    model.setPassword(password);
+                    if (model.isPasswordSet()) {
                         switch (eventType) {
                             case LOCAL_DECRYPT:
-                                if (logic.localDecrypt()) {
+                                if (model.localDecrypt()) {
                                     view.addStatus("Text has been successfully decrypted locally.");
                                 } else {
                                     addStatusAndAlert("Wrong password!");
@@ -296,7 +325,8 @@ public class MainController {
                                 break;
                             case EXTERNAL_DECRYPT:
                                 try {
-                                    logic.externalDecrypt();
+                                    model.externalDecrypt(properties.getProperty("externalName"),
+                                            properties.getProperty("externalDir"));
                                     view.addStatus("Text has been successfully decrypted externally.");
                                 } catch (InterruptedException e){
                                     e.printStackTrace();
@@ -308,7 +338,8 @@ public class MainController {
                                 break;
                             case SOCKET_DECRYPT:
                                 try {
-                                    logic.socketDecrypt();
+                                    model.socketDecrypt(properties.getProperty("socketHostName"),
+                                            Integer.parseInt(properties.getProperty("socketPort")));
                                     view.addStatus("Text has been successfully decrypted with socket.");
                                 } catch (SocketException e){
                                     e.printStackTrace();
@@ -321,7 +352,8 @@ public class MainController {
                                 break;
                             case RMI_DECRYPT:
                                 try {
-                                    logic.rmiDecrypt();
+                                    model.rmiDecrypt(properties.getProperty("rmiHostName"),
+                                            Integer.parseInt(properties.getProperty("rmiPort")));
                                     view.addStatus("Text has been successfully decrypted with rmi.");
                                 } catch (RemoteException e) {
                                     e.printStackTrace();
@@ -333,7 +365,9 @@ public class MainController {
                                 break;
                             case API_DECRYPT:
                                 try {
-                                    logic.apiDecrypt();
+                                    model.apiDecrypt(properties.getProperty("apiHostName"),
+                                            properties.getProperty("apiSlug"),
+                                            Integer.parseInt(properties.getProperty("apiPort")));
                                     view.addStatus("Text has been successfully decrypted with rest api.");
                                 } catch (RemoteException e) {
                                     e.printStackTrace();
@@ -356,15 +390,21 @@ public class MainController {
 
     class ResetFieldsHandler implements EventHandler<ActionEvent> {
 
-        public void handle(ActionEvent event) {logic.resetCryptoObject();}
+        public void handle(ActionEvent event) {model.resetCryptoObject();}
+    }
+
+    class DisplayDateHandler implements EventHandler<ActionEvent> {
+
+        public void handle(ActionEvent event) {view.openDateDialog(model.getEncryptionDate());}
     }
 
     public void registerCryptoModelObserver(CryptoModelObserver cryptoView) {
-        logic.registerCryptoModelObserver(cryptoView);
+        model.registerObserver(cryptoView);
     }
 
     private void addStatusAndAlert(String msg) {
         view.addStatus(msg);
         view.openAlert(msg);
     }
+
 }

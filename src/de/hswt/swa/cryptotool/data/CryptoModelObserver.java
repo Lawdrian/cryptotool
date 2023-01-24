@@ -1,7 +1,11 @@
 package de.hswt.swa.cryptotool.data;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public interface CryptoModelObserver {
 
-    public void update(Crypto crypto);
+    void update(Crypto crypto);
 }
 

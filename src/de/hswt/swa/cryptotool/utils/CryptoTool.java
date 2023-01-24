@@ -1,12 +1,10 @@
-package de.hswt.swa.cryptotool.tools;
+package de.hswt.swa.cryptotool.utils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.Key;
-import java.util.LinkedList;
-import java.util.Scanner;
 
 import javax.crypto.Cipher;
 import javax.crypto.CipherInputStream;
@@ -18,8 +16,10 @@ import java.util.Base64;
 public class CryptoTool {
 
 	static String cryptTransformation = "AES";
-	
 
+	/**
+	 * Nothing changed
+	 */
 	public boolean encrypt(OutputStream writer, byte[] input, String passPhrase) {
 		
 		Cipher c;
@@ -48,7 +48,9 @@ public class CryptoTool {
 		}
 		return true;
 	}
-	
+	/**
+	 * Nothing changed
+	 */
 	public byte[] decrypt(InputStream input, String passPhrase) {
 		
 		Cipher c;
@@ -79,51 +81,31 @@ public class CryptoTool {
 			return null;
 		}
 	}
-	
-	
+
+	/**
+	 * This method gets compiled to the external program used in the application.
+	 */
 	public static void main(String[] arg) {
 	
 		CryptoTool crypto = new CryptoTool();
-		Scanner scanner = new Scanner(System.in);
-		
-		try {
-			System.out.print("Passphrase please: ");
-			String pass = scanner.nextLine();
-			
-			while (pass.length() < 16) {
-				pass = pass + 'x';
-			}
+		// mode == 0 is encrypt; mode == 1 is decrypt
+		int mode = Integer.parseInt(arg[0]);
+		String text = arg[1];
+		String password = arg[2];
+
+		if (mode == 0) {
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
-			LinkedList<String> text = new LinkedList<String>();
-			while (scanner.hasNext()) {
-				String line = scanner.nextLine();
-				if (line.equalsIgnoreCase("quit")) 
-					break;
-				crypto.encrypt( out, line.getBytes(), pass);
-
-				String s = Base64.getEncoder().encodeToString(out.toByteArray() );
-				text.add(s);
-				out.reset();
-			}
-			
-			text.forEach(System.out::println);
-			
-			for (String s : text) {
-				byte[] bytes  = Base64.getDecoder().decode(s);
-				InputStream is = new ByteArrayInputStream( bytes);
-				byte[] plain = crypto.decrypt(is, pass);
-
-				System.out.println(new String(plain) );  
-				out.reset();
-			}
-			
-		} catch (Exception e) {
-			e.printStackTrace();
+			crypto.encrypt( out, text.getBytes(), password);
+			String s = Base64.getEncoder().encodeToString(out.toByteArray());
+			out.reset();
+			System.out.println(s);
 		}
-		
-		
-		
-		
+		if (mode == 1) {
+			byte[] bytes  = Base64.getDecoder().decode(text);
+			InputStream is = new ByteArrayInputStream( bytes);
+			byte[] plain = crypto.decrypt(is, password);
+			System.out.println(new String(plain));
+		}
 	}
 
 }

@@ -3,7 +3,7 @@ package de.hswt.swa.cryptotool.api;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import de.hswt.swa.cryptotool.data.Crypto;
-import de.hswt.swa.cryptotool.tools.CryptoTool;
+import de.hswt.swa.cryptotool.utils.CryptoTool;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,16 +13,26 @@ import java.io.*;
 import java.util.Base64;
 import java.util.Scanner;
 
+/**
+ * @author AdrianWild
+ * @version 1.0
+ */
 public class CryptoApiService extends HttpServlet {
 
+    /**
+     * This method provides a REST API POST endpoint. It encrypts or decrypts the content of a crypto object that has
+     * been sent as a JSON string.
+     *
+     * @param request Request object
+     * @param response Response object,
+     * @throws ServletException Servlet error.
+     * @throws IOException Invalid password.
+     */
     public void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
         CryptoTool cryptoTool = new CryptoTool();
         try {
-
             Scanner scanner = new Scanner(request.getInputStream());
             String json = scanner.nextLine();
-
-            PrintWriter writer = response.getWriter();
 
             Gson gson = new Gson();
             JsonObject requestObj = gson.fromJson(json, com.google.gson.JsonObject.class);
@@ -69,11 +79,17 @@ public class CryptoApiService extends HttpServlet {
             } else {
                 responseObj.addProperty("error", "invalid method");
             }
+
+            // use UTF-8 encoding to be able to correctly send umlauts.
+            response.setCharacterEncoding("UTF-8");
             String responseMessage = gson.toJson(responseObj);
+            PrintWriter writer = response.getWriter();
             writer.println(responseMessage);
             writer.close();
         } catch (Exception e) {
             e.printStackTrace();
+            response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+            response.getOutputStream().println(e.toString());
         }
     }
 }

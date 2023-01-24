@@ -2,7 +2,7 @@ package de.hswt.swa.cryptotool.gui;
 
 import de.hswt.swa.cryptotool.data.Crypto;
 import de.hswt.swa.cryptotool.data.CryptoModelObserver;
-import de.hswt.swa.cryptotool.data.EventType;
+import de.hswt.swa.cryptotool.utils.EventType;
 import javafx.application.Application;
 import javafx.collections.ListChangeListener;
 import javafx.geometry.Insets;
@@ -10,12 +10,16 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.nio.file.Paths;
+import java.util.Date;
 import java.util.Optional;
 
 /**
@@ -40,12 +44,12 @@ public class MainFrame extends Application implements CryptoModelObserver {
      * It creates a window with a menubar at the top and 2 text fields in the center. At the bottom is a status field
      * and on the right side a button to reset all fields.
      * @param stage Stage object.
-     * @throws Exception
+     * @throws Exception Error occurred.
      */
     public void start(Stage stage) throws Exception {
         controller = new MainController(this);
 
-        stage.setTitle("HSWT Crypotool");
+        stage.setTitle("HSWT Crypto Tool");
         mainStage = stage;
 
         BorderPane root = new BorderPane();
@@ -145,6 +149,27 @@ public class MainFrame extends Application implements CryptoModelObserver {
         Button resetFieldsButton = new Button("Reset Fields");
         resetFieldsButton.setOnAction(controller.getEventHandler(EventType.RESET_FIELDS));
 
+        // create button to display encrytion date
+        Button showEncryptionDate = new Button("Encryption Date");
+        showEncryptionDate.setOnAction(controller.getEventHandler(EventType.DISPLAY_DATE));
+
+        VBox rightTopBox = new VBox();
+        rightTopBox.getChildren().addAll(resetFieldsButton, showEncryptionDate);
+        rightTopBox.setSpacing(10);
+
+        // create copyright text
+        VBox rightBottomBox = new VBox();
+        Text copyright = new Text("©Copyright");
+        Text author = new Text("Adrian Wild");
+        Text date = new Text("2023");
+
+        // set reset button and copyright to the right side of the view
+        rightBottomBox.getChildren().addAll(copyright, author, date);
+        BorderPane rightPane = new BorderPane();
+        rightPane.setTop(rightTopBox);
+        rightPane.setBottom(rightBottomBox);
+        rightPane.setPadding(new Insets(10, 10, 10, 10));
+
         // create the two text fields
         plainTextArea = new TextArea();
         plainTextArea.setEditable(false);
@@ -171,7 +196,7 @@ public class MainFrame extends Application implements CryptoModelObserver {
         cipherTextArea.prefWidthProperty().bind(mainBox.widthProperty().multiply(0.6));
         mainBox.setPadding(new Insets(0, 0, 0, 50));
 
-        root.setRight(resetFieldsButton);
+        root.setRight(rightPane);
         root.setCenter(mainBox);
 
         // at the bottom add a status display
@@ -185,9 +210,15 @@ public class MainFrame extends Application implements CryptoModelObserver {
             statusPane.setContent(statusLines);
         });
         statusPane.setContent(statusLines);
-
         root.setBottom(statusPane);
+
         stage.setScene(scene);
+
+        // set image from file system as application icon
+        String imagePath = Paths.get("assets/Favicon.png")
+                .toAbsolutePath()
+                .toString();
+        stage.getIcons().add(new Image(imagePath));
         stage.show();
 
         controller.registerCryptoModelObserver(this);
@@ -231,21 +262,41 @@ public class MainFrame extends Application implements CryptoModelObserver {
     }
 
     /**
+     * This function opens a javafx alert field that displays the encryption date to the user.
+     * If a text has not been encrypted yet, then a generic message will be displayed instead.
+     *
+     * @param date The message that should be displayed to the user.
+     */
+    public void openDateDialog(Date date) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Encryption Date");
+        alert.setHeaderText(null);
+        if (date != null) {
+            alert.setContentText("Encryption date: " + date.toString());
+        } else {
+            alert.setContentText("Text has not been encrypted yet");
+        }
+        alert.show();
+    }
+
+    /**
      * This function opens a javafx dialog field where the user has to enter a password and press enter.
      *
      * @param mode Decides the title of the dialog. Should be 1, if the dialog is used for entering the password to decrypt a cipher.
      * @return The password as Optional type.
      */
     public Optional<String> openPasswordDialog(Integer mode) {
+        String title = "Password field";
         String msg;
         if (mode == 1) {
-            msg = "Type in password to decrypt cipher";
+            msg = "Type in password to decrypt cipher.";
         }
         else {
-            msg = "Set password to encrypt text. Mutated vowels aren't allowed.";
+            msg = "Set password to encrypt text." + System.getProperty("line.separator") + "Umlauts aren't allowed.";
         }
         Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle(msg);
+        dialog.setTitle(title);
+        dialog.setHeaderText(msg);
         ButtonType okButtonType = new ButtonType("Ok", ButtonBar.ButtonData.OK_DONE);
         ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
         dialog.getDialogPane().getButtonTypes().addAll(okButtonType, cancelButtonType);

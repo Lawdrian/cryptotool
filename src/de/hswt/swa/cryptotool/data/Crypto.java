@@ -4,9 +4,9 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * This class holds the object that all operations of this application operate on.
  * @author AdrianWild
  * @version 1.0
+ * This class holds the object that all operations of this application operate on.
  */
 public class Crypto implements Serializable {
 
