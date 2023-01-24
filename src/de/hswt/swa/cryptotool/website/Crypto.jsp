@@ -49,7 +49,7 @@
         <h3 class="underline">Input</h3>
         <textarea id="inputId" name="input" rows="10" cols="100" placeholder="enter text..."></textarea>
         <h3 class="underline">Password</h3>
-        <p>Umlauts aren't allowed for the password</p>
+        <div>Umlauts aren't allowed for the password</div>
         <input id="passwordId" type="password" name="password" onkeyup="checkEmptyField()" placeholder="enter password...">
         <h3 class="underline">Action</h3>
         <input id="encodeId" type="submit" name="method" value="encrypt" disabled>
